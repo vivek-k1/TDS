@@ -358,6 +358,11 @@ function solveGeospatialNearestWarehouse(email) {
     lat = +Math.max(8, Math.min(35, lat)).toFixed(4);
     lon = +Math.max(68, Math.min(97, lon)).toFixed(4);
 
+    // Consume RNG exactly like the exam generator (Weight_Kg).
+    // Weight isn't used for the nearest-warehouse decision, but RNG consumption
+    // affects the rest of the generated dataset.
+    Math.round(5 + o() * 95);
+
     let best = warehouses[0].name;
     let bestDist = Infinity;
     for (const wh of warehouses) {
@@ -445,11 +450,11 @@ function solveDatasetteTopCity(email) {
 function solveDuckdbMonthlyGrowthSqlTemplate() {
   return `WITH parsed AS (
   SELECT
-    COALESCE(
-      TRY_STRPTIME(sale_date, '%Y-%m-%d'),
-      TRY_STRPTIME(sale_date, '%d/%m/%Y'),
-      TRY_STRPTIME(sale_date, '%B %d, %Y')
-    ) AS dt,
+    CASE
+      WHEN strpos(sale_date, '/') > 0 THEN STRPTIME(sale_date, '%d/%m/%Y')
+      WHEN strpos(sale_date, '-') > 0 THEN STRPTIME(sale_date, '%Y-%m-%d')
+      ELSE STRPTIME(sale_date, '%B %d, %Y')
+    END AS dt,
     amount
   FROM sales
 ),
@@ -458,7 +463,6 @@ monthly AS (
     strftime(dt, '%Y-%m') AS month,
     SUM(amount) AS revenue
   FROM parsed
-  WHERE dt IS NOT NULL
   GROUP BY strftime(dt, '%Y-%m')
 ),
 mom AS (
@@ -530,9 +534,16 @@ function solveEmbeddingOutlierHeadline(email) {
   const primaryKey = keys[t];
   const outlierKey = keys[s];
 
-  const primary = [...headlines[primaryKey]];
-  const secondary = [...headlines[outlierKey]];
-  const outlier = secondary[Math.floor(o() * secondary.length)];
+  // The exam shuffles the primary category first (consumes RNG),
+  // then selects the outlier headline from the secondary category.
+  const primaryArr = [...headlines[primaryKey]];
+  for (let u = primaryArr.length - 1; u > 0; u--) {
+    const v = Math.floor(o() * (u + 1));
+    [primaryArr[u], primaryArr[v]] = [primaryArr[v], primaryArr[u]];
+  }
+
+  const secondaryArr = [...headlines[outlierKey]];
+  const outlier = secondaryArr[Math.floor(o() * secondaryArr.length)];
 
   // The question UI displays 6 items:
   // first 5 from primary, plus the outlier inserted at a random index.
@@ -659,29 +670,20 @@ async function solveQGISVoronoiAreaKm2(email) {
 function solveDuckdbSalesOverTimeSqlTemplate() {
   return `WITH hourly AS (
   SELECT
-    EXTRACT(HOUR FROM timestamp) AS hour,
+    EXTRACT(HOUR FROM CAST(timestamp AS TIMESTAMP)) AS hour,
     category,
     SUM(amount) AS total_amount
   FROM sales
   GROUP BY 1, 2
-),
-grid AS (
-  SELECT
-    h.hour,
-    c.category
-  FROM (SELECT DISTINCT hour FROM hourly) h
-  CROSS JOIN (SELECT DISTINCT category FROM sales) c
 )
 SELECT
-  g.hour,
-  COALESCE(SUM(CASE WHEN g.category = 'Electronics' THEN hourly.total_amount END), 0) AS Electronics,
-  COALESCE(SUM(CASE WHEN g.category = 'Clothing' THEN hourly.total_amount END), 0) AS Clothing,
-  COALESCE(SUM(CASE WHEN g.category = 'Home Goods' THEN hourly.total_amount END), 0) AS "Home Goods"
-FROM grid g
-LEFT JOIN hourly
-  ON hourly.hour = g.hour AND hourly.category = g.category
-GROUP BY g.hour
-ORDER BY g.hour;`;
+  hour,
+  ROUND(COALESCE(SUM(CASE WHEN category = 'Electronics' THEN total_amount END), 0), 0) AS Electronics,
+  ROUND(COALESCE(SUM(CASE WHEN category = 'Clothing' THEN total_amount END), 0), 0) AS Clothing,
+  ROUND(COALESCE(SUM(CASE WHEN category = 'Home Goods' THEN total_amount END), 0), 0) AS "Home Goods"
+FROM hourly
+GROUP BY hour
+ORDER BY hour;`;
 }
 
 // ── Q17: LLM Image Generation (exact JSON request body) ──
