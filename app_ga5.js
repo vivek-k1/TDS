@@ -126,9 +126,11 @@ function solveCorrelationExcel(email) {
   const n = new Math.seedrandom(`${email}#${id}`);
   const cols = ["Study_Hours", "Sleep_Hours", "Screen_Time", "Attendance_Percent", "Exam_Score"];
   const data = [];
+  // Match exam generator: noise multiplier is sampled ONCE, not per-row.
+  const noiseMul = 4 + n() * 4;
   for (let t = 0; t < 120; t++) {
     const g = +(2 + n() * 8).toFixed(1);
-    const w = +clamp(50 + 5 * g + boxMuller(n) * (4 + n() * 4), 30, 100).toFixed(1);
+    const w = +clamp(50 + 5 * g + boxMuller(n) * noiseMul, 30, 100).toFixed(1);
     const b = +clamp(7 + boxMuller(n) * 1, 4, 10).toFixed(1);
     const S = +clamp(8 - 1.5 * b + boxMuller(n) * 2, 0, 12).toFixed(1);
     const I = +clamp(70 + 2 * g + boxMuller(n) * 8, 50, 100).toFixed(1);
