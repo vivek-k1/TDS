@@ -463,6 +463,7 @@ monthly AS (
     strftime(dt, '%Y-%m') AS month,
     SUM(amount) AS revenue
   FROM parsed
+  WHERE dt IS NOT NULL
   GROUP BY strftime(dt, '%Y-%m')
 ),
 mom AS (
@@ -478,6 +479,7 @@ SELECT
   month,
   ROUND(mom_growth_pct, 2) AS mom_growth_pct
 FROM mom
+WHERE mom_growth_pct IS NOT NULL
 ORDER BY mom_growth_pct DESC
 LIMIT 1;`;
 }
