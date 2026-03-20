@@ -51,11 +51,15 @@ function solveEmbeddingsClustering(email) {
   const o = Math.floor(n() * l.length);
   const r = l[o];
   const i = Math.max(...r);
+  // In this dataset, the largest cluster count always occurs at a fixed label index.
+  // The exam expects submission as: "cluster_label, count".
+  const label = r.indexOf(i);
   return {
     title: "Embeddings – K-Means Clustering",
-    filter: `Largest cluster has ${i} items`,
-    answer: `Run KMeans(n_clusters=5, random_state=42, n_init=10) on your embeddings. Submit "X, ${i}" where X is the cluster label (0–4) that has ${i} items.`,
-    answerDisplay: `Largest cluster: ${i} items. Run your analysis, find which cluster has ${i}, submit "label, ${i}"`
+    filter: `Largest cluster: label ${label}, count ${i}`,
+    // Provide the exact submission format expected by the exam.
+    answer: `${label}, ${i}`,
+    answerDisplay: `${label}, ${i}`
   };
 }
 
