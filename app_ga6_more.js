@@ -433,12 +433,27 @@ const TOKEN_MISER_PROMPTS = [
 /** ≤4 words; name exact exam labels so the model does not invent phrases like "Technical Issue". */
 const TOKEN_MISER_BY_TASK = {
   urgency: [
+    // Prefer imperatives that discourage "Priority:", "Sure!", etc. (single-token answers).
+    "Strictly Low Medium High.",
+    "Exactly Low Medium High.",
+    "Pick Low Medium High.",
+    "Emit Low Medium High.",
+    "Print Low Medium High.",
+    "Return Low Medium High.",
+    "Stop. Low Medium High.",
+    "Word Low Medium High.",
+    "Just Low Medium High.",
     "Low Medium High only.",
     "Reply Low Medium High.",
     "Output Low Medium High.",
     "Classify Low Medium High."
   ],
   sentiment: [
+    "Strictly Positive Negative Neutral.",
+    "Exactly Positive Negative Neutral.",
+    "Pick Positive Negative Neutral.",
+    "Emit Positive Negative Neutral.",
+    "Print Positive Negative Neutral.",
     "Positive Negative Neutral only.",
     "Reply Positive Negative Neutral.",
     "Output Positive Negative Neutral.",
@@ -477,7 +492,7 @@ async function solveTokenMiserLive(email, apiToken) {
   if (!apiToken || !apiToken.trim()) {
     return {
       title: "The Token Miser",
-      filter: `${task.title} (${task.key}) — add AIPipe token; try prompts that name exact labels`,
+      filter: `${task.title} (${task.key}) — add AIPipe token to auto-pick a prompt, or try first line below (≤4 words, labels only).`,
       answer: prompts.slice(0, 8).join("\n"),
       answerDisplay: prompts[0] || TOKEN_MISER_PROMPTS[0]
     };
@@ -500,14 +515,15 @@ async function solveTokenMiserLive(email, apiToken) {
               { role: "user", content: g.input }
             ],
             temperature: 0,
-            max_tokens: 5
+            max_tokens: 4,
+            stop: ["\n"]
           })
         });
         if (!v.ok) throw new Error(await v.text());
         const h = (await v.json()).choices?.[0]?.message?.content?.trim() || "";
+        // Match strict concatenation of letters (exam-style): "Priority: Medium" → fail.
         const k = h.replace(/[^a-zA-Z]/g, "").toLowerCase();
-        const A = g.output.toLowerCase();
-        return k === A;
+        return k === g.output.toLowerCase();
       })
     );
     const score = results.filter(Boolean).length;
