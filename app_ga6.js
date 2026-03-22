@@ -514,7 +514,7 @@ two AS (
   FROM predictions GROUP BY language_detected, message_length_bucket HAVING COUNT(*) >= ${r.minSize}
 )
 SELECT * FROM (SELECT * FROM one UNION ALL SELECT * FROM two) u
-ORDER BY slice_accuracy ASC LIMIT 1;`;
+ORDER BY slice_accuracy ASC, slice_size DESC, slice_definition ASC LIMIT 1;`;
   return {
     title: "The Slice Detective",
     filter: `${r.company} / ${r.domain}, minSize ${r.minSize}, overall ~${oa}%`,
@@ -909,13 +909,14 @@ function buildLeakageData(email) {
     (b) => `According to recent sources, ${b}. Is this statement correct?`,
     (b) => `True or false: ${b}.`,
     (b) => `A student claims that ${b}. Evaluate this claim.`,
-    (b) => `Based on the following fact â€” "${b}" â€” what can be concluded?`,
+    (b) => `Based on the following fact \u2014 "${b}" \u2014 what can be concluded?`,
     (b) => `Verify the following statement: ${b}.`,
     (b) => `The following was found online: "${b}". Assess its accuracy.`
   ];
   const contQs = d.slice(0, cCount).map((b) => templates[Math.floor(t() * templates.length)](b));
-  shuffleInPlace(genericQs, t);
-  const genericSlice = genericQs.slice(0, N - cCount);
+  const genericShuffled = genericQs.slice();
+  shuffleInPlace(genericShuffled, t);
+  const genericSlice = genericShuffled.slice(0, N - cCount);
   const gHigh = 0.72 + 0.15 * t();
   const gLow = 0.12 + 0.08 * t();
   const S = Math.min(0.97, gHigh + gLow);

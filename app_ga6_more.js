@@ -188,8 +188,8 @@ function buildCoverageGapData(email) {
   const w = [...d].sort((C, b) => C - b);
   const execLines = lineNums.filter((C) => !d.has(C));
   const T = e([20, 30, 40, 50]);
-  const x = a - (5 + Math.floor(t() * 15));
-  const g = Math.round((T * x) / 100);
+  const branchPctForViolations = r - (5 + Math.floor(t() * 15));
+  const g = Math.round((T * branchPctForViolations) / 100);
   const v = {};
   const S = [];
   for (let C = 0; C < T; C++) {
@@ -401,44 +401,10 @@ function solveBinaryRubric(email) {
 
 function buildTokenMiserTask(email) {
   const t = new Math.seedrandom(`${email}#q-token-miser-prompt`);
-  const pools = {
-    pos: {
-      title: "Part of Speech Tagging",
-      categories: ["Noun", "Verb", "Adjective", "Adverb", "Preposition"],
-      pool: [
-        { input: "The ball is perfectly **round**.", output: "Adjective" },
-        { input: "Please **round** the number to two decimals.", output: "Verb" },
-        { input: "She injured her **back** lifting boxes.", output: "Noun" },
-        { input: "He performed the task **well**.", output: "Adverb" },
-        { input: "What is the **difference** between supervised and unsupervised learning?", output: "Noun" }
-      ]
-    },
-    sentiment: {
-      title: "Sentiment Analysis",
-      categories: ["Positive", "Negative", "Neutral"],
-      pool: [
-        { input: "I absolutely loved the movie!", output: "Positive" },
-        { input: "It was a total waste of time.", output: "Negative" },
-        { input: "The meeting is at 3 PM.", output: "Neutral" }
-      ]
-    },
-    topic: {
-      title: "Topic Classification",
-      categories: ["Politics", "Sports", "Tech", "Entertainment"],
-      pool: [
-        { input: "Apple announced a new iPhone model.", output: "Tech" },
-        { input: "The Lakers won the championship game.", output: "Sports" }
-      ]
-    },
-    urgency: {
-      title: "Urgency Detection",
-      categories: ["High", "Medium", "Low"],
-      pool: [
-        { input: "My server is down and I am losing money!", output: "High" },
-        { input: "I have a small question about the billing cycle.", output: "Low" }
-      ]
-    }
-  };
+  const pools = globalThis.GA6_TOKEN_MISER_POOLS;
+  if (!pools) {
+    throw new Error("Load ga6_token_miser_pools.js before app_ga6_more.js (see index_ga6.html).");
+  }
   const keys = Object.keys(pools);
   const k = keys[Math.floor(t() * keys.length)];
   const d = pools[k];

@@ -36,6 +36,7 @@ INDEX_GA6_HTML = BASE / "index_ga6.html"
 APP_GA6_EMBEDDINGS_JS = BASE / "app_ga6_embeddings_data.js"
 APP_GA6_JS = BASE / "app_ga6.js"
 APP_GA6_MORE_JS = BASE / "app_ga6_more.js"
+GA6_TOKEN_MISER_POOLS_JS = BASE / "ga6_token_miser_pools.js"
 SEEDRANDOM_JS = BASE / "seedrandom.min.js"
 DATA_DIR = BASE / "data"
 CHECKS_FILE = DATA_DIR / "checks.txt"
@@ -74,13 +75,16 @@ def build_embedded_html(prefill_email: str | None = None, exam: str = "ga4") -> 
         emb = APP_GA6_EMBEDDINGS_JS.read_text(encoding="utf-8")
         app6 = APP_GA6_JS.read_text(encoding="utf-8")
         more6 = APP_GA6_MORE_JS.read_text(encoding="utf-8")
+        tm_pools = GA6_TOKEN_MISER_POOLS_JS.read_text(encoding="utf-8")
         prefix_lit = json.dumps(GA6_PY_FETCH_PREFIX)
         old_ga6 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
   <script src="app_ga6_embeddings_data.js?v=2"></script>
+  <script src="ga6_token_miser_pools.js?v=1"></script>
   <script src="app_ga6.js?v=2"></script>
   <script src="app_ga6_more.js?v=2"></script>"""
         new_scripts = f"""  <script>{seedrandom_src}</script>
   <script>globalThis.GA6_PY_FETCH_PREFIX={prefix_lit};</script>
+  <script>{tm_pools}</script>
   <script>{emb}</script>
   <script>{app6}</script>
   <script>{more6}</script>"""
@@ -262,6 +266,7 @@ def main():
         required = [
             INDEX_GA6_HTML,
             APP_GA6_EMBEDDINGS_JS,
+            GA6_TOKEN_MISER_POOLS_JS,
             APP_GA6_JS,
             APP_GA6_MORE_JS,
         ]
