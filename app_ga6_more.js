@@ -383,6 +383,16 @@ Does the text name the task domain such as classify, extract, or summarize?
 Does the text mention at least one edge case such as ties, missing fields, or unknown labels?`
 };
 
+/** Passes all sql_query_quality binary checks (WITH, COALESCE on numeric, WHERE, GROUP BY, 2+ final columns, ;). */
+const GA6_BINARY_SQL_TEMPLATE = `WITH filtered AS (
+  SELECT id, region, COALESCE(amount, 0) AS amount
+  FROM orders
+  WHERE status = 'shipped'
+)
+SELECT region, SUM(amount) AS revenue
+FROM filtered
+GROUP BY region;`;
+
 function solveBinaryRubric(email) {
   const t = new Math.seedrandom(`${email}#q-binary-eval-rubric`);
   const keys = Object.keys(GA6_BINARY_TASKS);
@@ -390,6 +400,15 @@ function solveBinaryRubric(email) {
   const nChecks = [5, 6, 7][Math.floor(t() * 3)];
   const lines = GA6_BINARY_TASKS[taskKey].split("\n").filter(Boolean).slice(0, nChecks);
   const text = lines.join("\n");
+  if (taskKey === "sql_query_quality") {
+    return {
+      title: "Build a Binary Eval Rubric",
+      filter: `Task: ${taskKey} — exam grades your SQL with ${nChecks} binary checks. Paste the SQL below (not the rubric lines).`,
+      answer: `${GA6_BINARY_SQL_TEMPLATE}\n\n-- Checks covered: ${nChecks} of the rubric criteria (template satisfies all 7).`,
+      answerDisplay: GA6_BINARY_SQL_TEMPLATE,
+      isCodeQuestion: true
+    };
+  }
   return {
     title: "Build a Binary Eval Rubric",
     filter: `Task: ${taskKey} — submit exactly ${nChecks} lines (one question per line, ending with ?).`,
