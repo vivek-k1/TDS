@@ -512,7 +512,11 @@ async function runPyodideExam(email) {
   await pyodide.loadPackage("pandas");
 
   async function runFile(path, qid) {
-    const res = await fetch(path);
+    const p =
+      typeof globalThis.GA6_PY_FETCH_PREFIX === "string" && globalThis.GA6_PY_FETCH_PREFIX.trim()
+        ? `${globalThis.GA6_PY_FETCH_PREFIX.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`
+        : path;
+    const res = await fetch(p);
     if (!res.ok) throw new Error(`Cannot fetch ${path} (${res.status}). Serve the site over HTTP (e.g. Live Server), not file://`);
     const src = await res.text();
     pyodide.globals.set("EXAM_SEED", `${email}#${qid}`);

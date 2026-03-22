@@ -3,6 +3,8 @@ TDS GA4 Answer Checker — Streamlit deployment.
 Embeds the same client-side checker (HTML + JS) in an iframe so answers match the exam exactly.
 """
 import datetime as dt
+import json
+import os
 from functools import lru_cache
 
 import streamlit as st
@@ -18,7 +20,7 @@ except Exception:
 
 # Page config (must be first Streamlit command)
 st.set_page_config(
-    page_title="TDS GA4 - Answer Checker",
+    page_title="TDS Answer Checker",
     page_icon="📋",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -30,6 +32,10 @@ INDEX_HTML = BASE / "index.html"
 APP_JS = BASE / "app.js"
 INDEX_GA5_HTML = BASE / "index_ga5.html"
 APP_GA5_JS = BASE / "app_ga5.js"
+INDEX_GA6_HTML = BASE / "index_ga6.html"
+APP_GA6_EMBEDDINGS_JS = BASE / "app_ga6_embeddings_data.js"
+APP_GA6_JS = BASE / "app_ga6.js"
+APP_GA6_MORE_JS = BASE / "app_ga6_more.js"
 SEEDRANDOM_JS = BASE / "seedrandom.min.js"
 DATA_DIR = BASE / "data"
 CHECKS_FILE = DATA_DIR / "checks.txt"
@@ -37,7 +43,13 @@ ADMIN_EMAIL = "vivek@tds"
 GA4_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga4"
 # Assumed patterns for GA5 and Project 1 exam pages; update if your URLs differ.
 GA5_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga5"
+GA6_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga6"
 PROJECT1_URL = "https://exam.sanand.workers.dev/tds-2026-01-project1"
+# Pyodide fetches ga6_py_*.py; Streamlit iframe has no local static origin — use CDN (override via env).
+GA6_PY_FETCH_PREFIX = os.environ.get(
+    "GA6_PY_FETCH_PREFIX",
+    "https://cdn.jsdelivr.net/gh/vivek-k1/TDS@main",
+)
 
 
 def load_seedrandom():
@@ -50,24 +62,45 @@ def load_seedrandom():
 """
 
 
-def build_embedded_html(prefill_email: str | None = None, ga5: bool = False) -> str:
-    """Build a single HTML string with Bootstrap, seedrandom, and app.js inlined for iframe embedding."""
-    index_file = INDEX_GA5_HTML if ga5 else INDEX_HTML
-    app_file = APP_GA5_JS if ga5 else APP_JS
-    html = index_file.read_text(encoding="utf-8")
+def build_embedded_html(prefill_email: str | None = None, exam: str = "ga4") -> str:
+    """Build HTML with Bootstrap + seedrandom + app JS inlined for iframe embedding.
 
-    # Remove the two script tags and replace with inline scripts so it works inside Streamlit's iframe
-    seedrandom_src = load_seedrandom()
-    app_js_src = app_file.read_text(encoding="utf-8")
+    exam: \"ga4\" | \"ga5\" | \"ga6\"
+    """
+    if exam == "ga6":
+        index_file = INDEX_GA6_HTML
+        html = index_file.read_text(encoding="utf-8")
+        seedrandom_src = load_seedrandom()
+        emb = APP_GA6_EMBEDDINGS_JS.read_text(encoding="utf-8")
+        app6 = APP_GA6_JS.read_text(encoding="utf-8")
+        more6 = APP_GA6_MORE_JS.read_text(encoding="utf-8")
+        prefix_lit = json.dumps(GA6_PY_FETCH_PREFIX)
+        old_ga6 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
+  <script src="app_ga6_embeddings_data.js?v=2"></script>
+  <script src="app_ga6.js?v=2"></script>
+  <script src="app_ga6_more.js?v=2"></script>"""
+        new_scripts = f"""  <script>{seedrandom_src}</script>
+  <script>globalThis.GA6_PY_FETCH_PREFIX={prefix_lit};</script>
+  <script>{emb}</script>
+  <script>{app6}</script>
+  <script>{more6}</script>"""
+        html = html.replace(old_ga6, new_scripts)
+    else:
+        ga5 = exam == "ga5"
+        index_file = INDEX_GA5_HTML if ga5 else INDEX_HTML
+        app_file = APP_GA5_JS if ga5 else APP_JS
+        html = index_file.read_text(encoding="utf-8")
 
-    # Replace script tags with inline versions (GA4 vs GA5 have different script src)
-    old_ga4 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
+        seedrandom_src = load_seedrandom()
+        app_js_src = app_file.read_text(encoding="utf-8")
+
+        old_ga4 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
   <script src="app.js?v=3"></script>"""
-    old_ga5 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
+        old_ga5 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
   <script src="app_ga5.js?v=1"></script>"""
-    new_scripts = f"""  <script>{seedrandom_src}</script>
+        new_scripts = f"""  <script>{seedrandom_src}</script>
   <script>{app_js_src}</script>"""
-    html = html.replace(old_ga4, new_scripts).replace(old_ga5, new_scripts)
+        html = html.replace(old_ga4, new_scripts).replace(old_ga5, new_scripts)
 
     if prefill_email:
         esc = prefill_email.replace("\\", "\\\\").replace('"', '\\"').replace("<", "\\u003c")
@@ -189,7 +222,7 @@ def main():
 
     exam_choice = st.selectbox(
         "Exam / Project",
-        ("GA4", "GA5", "Project 1"),
+        ("GA4", "GA5", "GA6", "Project 1"),
         index=0,
     )
 
@@ -205,6 +238,12 @@ def main():
             f"[TDS 2026-01 GA5]({GA5_URL}) "
             "using your registered email."
         )
+    elif exam_choice == "GA6":
+        st.caption(
+            "Compute answers for "
+            f"[TDS 2026-01 GA6]({GA6_URL}) "
+            "using your registered email. Python items load via Pyodide from the published repo (jsDelivr)."
+        )
     else:
         st.caption(
             f"Embedded Project 1 exam page from [{PROJECT1_URL}]({PROJECT1_URL})."
@@ -217,16 +256,23 @@ def main():
         components.iframe(PROJECT1_URL, height=900, scrolling=True)
         return
 
-    # GA4 / GA5: local answer checker using embedded HTML + app.js
-    is_ga5 = exam_choice == "GA5"
-    index_file = INDEX_GA5_HTML if is_ga5 else INDEX_HTML
-    app_file = APP_GA5_JS if is_ga5 else APP_JS
-    if not index_file.exists():
-        st.error(f"Missing {index_file}. Run this app from the project root (e.g. `streamlit run streamlit_app.py`).")
-        return
-    if not app_file.exists():
-        st.error(f"Missing {app_file}.")
-        return
+    # GA4 / GA5 / GA6: local answer checker using embedded HTML + inlined JS
+    exam_key = {"GA4": "ga4", "GA5": "ga5", "GA6": "ga6"}[exam_choice]
+    if exam_key == "ga6":
+        required = [
+            INDEX_GA6_HTML,
+            APP_GA6_EMBEDDINGS_JS,
+            APP_GA6_JS,
+            APP_GA6_MORE_JS,
+        ]
+    elif exam_key == "ga5":
+        required = [INDEX_GA5_HTML, APP_GA5_JS]
+    else:
+        required = [INDEX_HTML, APP_JS]
+    for path in required:
+        if not path.exists():
+            st.error(f"Missing {path}. Run this app from the project root (e.g. `streamlit run streamlit_app.py`).")
+            return
 
     with st.form("email_form"):
         email = st.text_input("Email address", placeholder="you@example.com", key="visitor_email")
@@ -242,7 +288,7 @@ def main():
     else:
         prefill = None
 
-    embedded = build_embedded_html(prefill_email=prefill, ga5=is_ga5)
+    embedded = build_embedded_html(prefill_email=prefill, exam=exam_key)
     components.html(embedded, height=900, scrolling=True)
 
 
