@@ -478,11 +478,8 @@ function solveSliceDetective(email) {
   const r = buildSliceDetectiveData(email);
   const oa = (r.overallAccuracy * 100).toFixed(1);
   const sa = (r.worstSlice.accuracy * 100).toFixed(1);
-  const sql = `/* HAVING COUNT(*) >= ${r.minSize}
-   overall_accuracy scalar = ${r.overallAccuracy} (${oa}%)
-   target worst slice ~ acc ${r.worstSlice.accuracy}, size ${r.worstSlice.size}
-   slice_definition ~ ${r.worstSlice.definition} */
-WITH overall AS (
+  // Do not prefix with /* */ — exam only allows queries that trim() to start WITH or SELECT.
+  const sql = `WITH overall AS (
   SELECT AVG(CASE WHEN true_label = predicted_label THEN 1.0 ELSE 0.0 END) AS oa FROM predictions
 ),
 one AS (
