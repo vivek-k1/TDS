@@ -11,6 +11,9 @@ node_modules/
 # Visitor log (admin only)
 data/
 
+# Local debug
+debug.log
+
 # IDE / OS
 .idea/
 .vscode/

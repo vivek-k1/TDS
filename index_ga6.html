@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TDS GA6 - Answer Checker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-card: #1e293b;
+      --bg-input: #334155;
+      --text-primary: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent: #a78bfa;
+      --accent-hover: #c4b5fd;
+      --success: #4ade80;
+      --border: #475569;
+    }
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1a2e1a 0%, #0f172a 50%, #1a1a2e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 0;
+    }
+    .hero h1 { font-weight: 700; letter-spacing: -0.02em; }
+    .hero .badge-custom {
+      background: rgba(167, 139, 250, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      font-size: 0.85rem;
+      padding: 0.35em 0.75em;
+      border-radius: 999px;
+    }
+    .card-dark {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .form-control-dark {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-radius: 8px;
+    }
+    .form-control-dark:focus {
+      background: var(--bg-input);
+      border-color: var(--accent);
+      color: var(--text-primary);
+      box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+    }
+    .form-control-dark::placeholder { color: var(--text-muted); }
+    .btn-accent {
+      background: var(--accent);
+      color: var(--bg-primary);
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 1.5rem;
+      transition: all 0.2s;
+    }
+    .btn-accent:hover {
+      background: var(--accent-hover);
+      color: var(--bg-primary);
+      transform: translateY(-1px);
+    }
+    .btn-accent:disabled {
+      opacity: 0.5;
+      transform: none;
+    }
+    .answer-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+    .answer-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 24px rgba(167, 139, 250, 0.08);
+    }
+    .answer-card .q-number {
+      background: var(--accent);
+      color: var(--bg-primary);
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .answer-card .q-title {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text-primary);
+    }
+    .answer-card .q-filter {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    .answer-value {
+      background: rgba(74, 222, 128, 0.1);
+      border: 1px solid rgba(74, 222, 128, 0.25);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.85rem;
+      color: var(--success);
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+    .answer-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .spinner-border-sm { width: 1rem; height: 1rem; border-width: 0.15em; }
+    #results { display: none; }
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 6px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .text-accent { color: var(--accent) !important; }
+    .note-box {
+      background: rgba(167, 139, 250, 0.08);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+      border-radius: 8px;
+      padding: 1rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="container">
+      <div class="d-flex align-items-center gap-3 mb-2">
+        <h1 class="mb-0">TDS GA6</h1>
+        <span class="badge-custom">Answer Checker</span>
+      </div>
+      <p class="text-muted mb-0" style="font-size:1.05rem;">
+        Helper for GA6-style questions (bundle aligned with
+        <a href="https://exam.sanand.workers.dev/" target="_blank" class="text-accent text-decoration-none">exam.sanand.workers.dev</a>).
+        Use the same registered email as on the exam for seeded items.
+      </p>
+    </div>
+  </div>
+
+  <div class="container py-4">
+    <div class="row justify-content-center">
+      <div class="col-lg-9">
+        <div class="card-dark p-4 mb-4">
+          <label for="emailInput" class="form-label fw-semibold">Your registered email</label>
+          <div class="d-flex gap-2 flex-wrap">
+            <input type="email" class="form-control form-control-dark flex-grow-1" id="emailInput"
+                   placeholder="you@example.com" required>
+            <button class="btn btn-accent" id="computeBtn" type="button" onclick="computeAllAnswersGA6()">
+              Compute Answers
+            </button>
+          </div>
+          <label for="apiToken" class="form-label fw-semibold mt-3 mb-1">Optional: AIPipe token (Token Miser only)</label>
+          <input type="password" class="form-control form-control-dark mb-1" id="apiToken"
+                 placeholder="sk-... (calls aipipe.org for Q4)" autocomplete="off">
+          <div class="note-box mt-3">
+            Load over <strong>http://</strong> (e.g. VS Code Live Server): Pyodide fetches <code>ga6_py_contract.py</code>,
+            <code>ga6_py_traintest.py</code>, <code>ga6_py_idempotency.py</code>. Same email as the exam for all seeded answers.
+            Binary rubric still needs an LLM judge on the exam (offline helper picks task + suggested checks only).
+          </div>
+        </div>
+
+        <div id="loading" style="display:none" class="text-center py-5">
+          <div class="spinner-border text-info" role="status"></div>
+          <p class="text-muted mt-3">Computing answers...</p>
+        </div>
+
+        <div id="results"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
+  <script src="app_ga6_embeddings_data.js?v=2"></script>
+  <script src="app_ga6.js?v=2"></script>
+  <script src="app_ga6_more.js?v=2"></script>
+</body>
+</html>
