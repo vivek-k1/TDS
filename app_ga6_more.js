@@ -420,14 +420,56 @@ const TOKEN_MISER_PROMPTS = [
   "Answer one category token."
 ];
 
+/** ≤4 words; name exact exam labels so the model does not invent phrases like "Technical Issue". */
+const TOKEN_MISER_BY_TASK = {
+  urgency: [
+    "Low Medium High only.",
+    "Reply Low Medium High.",
+    "Output Low Medium High.",
+    "Classify Low Medium High."
+  ],
+  sentiment: [
+    "Positive Negative Neutral only.",
+    "Reply Positive Negative Neutral.",
+    "Output Positive Negative Neutral.",
+    "One word sentiment label."
+  ],
+  topic: [
+    "Politics Sports Tech Entertainment."
+  ],
+  pos: [
+    "POS of bolded word.",
+    "One word POS tag.",
+    "Output single POS tag.",
+    "Grammar role one word."
+  ]
+};
+
+function wordCountLE4(s) {
+  return s.trim().split(/\s+/).length <= 4;
+}
+
+function tokenMiserPromptCandidates(taskKey) {
+  const specific = TOKEN_MISER_BY_TASK[taskKey] || [];
+  const merged = [...specific, ...TOKEN_MISER_PROMPTS];
+  const seen = new Set();
+  return merged.filter((p) => {
+    const w = p.trim();
+    if (!wordCountLE4(w) || seen.has(w)) return false;
+    seen.add(w);
+    return true;
+  });
+}
+
 async function solveTokenMiserLive(email, apiToken) {
   const task = buildTokenMiserTask(email);
+  const prompts = tokenMiserPromptCandidates(task.key);
   if (!apiToken || !apiToken.trim()) {
     return {
       title: "The Token Miser",
-      filter: `${task.title} — add AIPipe token in page field to auto-test`,
-      answer: TOKEN_MISER_PROMPTS.join("\n"),
-      answerDisplay: TOKEN_MISER_PROMPTS[0]
+      filter: `${task.title} (${task.key}) — add AIPipe token; try prompts that name exact labels`,
+      answer: prompts.slice(0, 8).join("\n"),
+      answerDisplay: prompts[0] || TOKEN_MISER_PROMPTS[0]
     };
   }
   const headers = {
@@ -435,7 +477,6 @@ async function solveTokenMiserLive(email, apiToken) {
     Authorization: `Bearer ${apiToken.trim()}`
   };
   let best = { prompt: "", score: -1 };
-  const prompts = TOKEN_MISER_PROMPTS.filter((p) => p.trim().split(/\s+/).length <= 4);
   for (const prompt of prompts) {
     const results = await Promise.all(
       task.sample.map(async (g) => {
