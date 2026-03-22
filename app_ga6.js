@@ -782,8 +782,11 @@ function buildLeakageData(email) {
   const s = (lo, hi) => lo + Math.floor(t() * (hi - lo + 1));
   const domains = ["general trivia", "coding puzzles", "science questions", "history facts", "math word problems"];
   const companies = ["BenchmarkLab", "EvalForge", "TestCraft", "MetricsHub", "ValidAI"];
-  const threshold = e([0.3, 0.4, 0.5]);
+  // Same draw order as exam Dn(): Cn, An, Mn, In — keeps RNG stream aligned.
+  const company = e(companies);
+  const domain = e(domains);
   const N = e([40, 50, 60]);
+  const threshold = e([0.3, 0.4, 0.5]);
   const corpusPool = [
     "the speed of light in a vacuum is approximately 299792 kilometres per second",
     "the mitochondria is often referred to as the powerhouse of the cell",
@@ -938,8 +941,8 @@ function buildLeakageData(email) {
     ? Math.round(clean.reduce((a, b) => a + b.is_correct, 0) / clean.length * 1e4) / 100
     : 0;
   return {
-    company: e(companies),
-    domain: e(domains),
+    company,
+    domain,
     N,
     threshold,
     correctAnswer: { contaminatedCount, reportedAccuracy, adjustedAccuracy }
