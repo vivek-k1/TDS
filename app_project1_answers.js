@@ -106,7 +106,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   results.innerHTML = `
-    <h2 class="mb-4" style="font-weight:700;letter-spacing:-0.03em">Project 1 Helper</h2>
+    <h2 class="mb-3" style="font-weight:700;letter-spacing:-0.03em">Project 1 Helper</h2>
+
+    <div class="answer-card mb-3">
+      <div class="d-flex align-items-start gap-3">
+        <div class="q-number">✓</div>
+        <div class="flex-grow-1">
+          <div class="q-title">Compute / Validate All</div>
+          <div class="q-filter mt-1">Computes what is computable (Q1/Q2) and validates filled fields for the manual questions.</div>
+          <div class="mt-3 d-flex align-items-center gap-3 flex-wrap">
+            <button type="button" id="p1-run-all" class="btn btn-sm btn-outline-success" style="border-radius:999px;">
+              Compute / Validate All
+            </button>
+            <div id="p1-run-all-status" class="small"></div>
+          </div>
+          <div class="mt-3">
+            <div class="answer-label">Checklist</div>
+            <div class="answer-json" id="p1-run-all-report" style="white-space:pre-wrap;">Click the button above.</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="answer-card mb-3">
       <div class="d-flex align-items-start gap-3">
@@ -386,6 +406,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const jwtSignal = document.getElementById("p1-jwt-signal");
   const jwtCheckSignal = document.getElementById("p1-jwt-check-signal");
   const jwtStatusSignal = document.getElementById("p1-jwt-status-signal");
+  const runAllBtn = document.getElementById("p1-run-all");
+  const runAllStatus = document.getElementById("p1-run-all-status");
+  const runAllReport = document.getElementById("p1-run-all-report");
 
   function normEmail(s) {
     return String(s ?? "").trim().toLowerCase();
@@ -395,6 +418,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!el) return;
     el.textContent = msg;
     el.style.color = color || "";
+  }
+
+  function reportLine(ok, label, detail = "") {
+    const mark = ok === true ? "PASS" : ok === false ? "FAIL" : "TODO";
+    return `${mark}  ${label}${detail ? ` — ${detail}` : ""}`;
   }
 
   function validateGithubPrUrl(u) {
@@ -798,6 +826,111 @@ document.addEventListener("DOMContentLoaded", async () => {
     status: jwtStatusSignal,
     btn: jwtCheckSignal,
     game: "signal"
+  });
+
+  async function runAll() {
+    runAllBtn.disabled = true;
+    setText(runAllStatus, "Running...", "#93c5fd");
+    const lines = [];
+
+    // Q1: compute
+    try {
+      await renderQ1();
+      const email = normEmail(emailInput?.value);
+      lines.push(reportLine(!!email, "Q1 Secret Agent (computed)", email ? `email=${email}` : "enter email"));
+    } catch (e) {
+      lines.push(reportLine(false, "Q1 Secret Agent (computed)", e instanceof Error ? e.message : String(e)));
+    }
+
+    // Q2: hardcoded JSON
+    try {
+      const ok = HARDCODED_P1_Q2.number.length === PROJECT1_Q2.digits && /^[a-f0-9]{64}$/i.test(HARDCODED_P1_Q2.hash);
+      lines.push(reportLine(ok, "Q2 300-digit JSON (hardcoded)"));
+    } catch (e) {
+      lines.push(reportLine(false, "Q2 300-digit JSON (hardcoded)", e instanceof Error ? e.message : String(e)));
+    }
+
+    // Q3: PR
+    const prVal = String(prUrlInput?.value ?? "").trim();
+    if (!prVal) {
+      lines.push(reportLine(null, "Q3 PR merged URL", "paste PR URL"));
+    } else {
+      try {
+        validateGithubPrUrl(prVal);
+        try {
+          const x = await validatePrViaGithubApi(prVal);
+          lines.push(reportLine(true, "Q3 PR merged (GitHub API)", `merged_at=${x.merged_at}, stars=${x.stars}`));
+        } catch (e) {
+          lines.push(reportLine(false, "Q3 PR merged (GitHub API)", e instanceof Error ? e.message : String(e)));
+        }
+      } catch (e) {
+        lines.push(reportLine(false, "Q3 PR merged URL (format)", e instanceof Error ? e.message : String(e)));
+      }
+    }
+
+    // Q4: parser (always manual)
+    lines.push(reportLine(null, "Q4 CommonMark parser", "manual (write parse_markdown)"));
+
+    // Q5–Q8: images
+    const imageCases = [
+      { label: "Q5 Affective Chart", kind: "q-generate-affective-chart", input: imgUrlsAffective },
+      { label: "Q6 Concept Incarnation", kind: "q-generate-concept-incarnation", input: imgUrlsConcept },
+      { label: "Q7 Style Transplant", kind: "q-generate-style-transplant", input: imgUrlsStyle },
+      { label: "Q8 Paradox Portrait", kind: "q-generate-paradox-portrait", input: imgUrlsParadox }
+    ];
+    for (const c of imageCases) {
+      const v = String(c.input?.value ?? "").trim();
+      if (!v) {
+        lines.push(reportLine(null, c.label, "paste URLs"));
+        continue;
+      }
+      try {
+        const { imageUrl, jsonUrl } = splitTwoUrls(v);
+        const out = await validateImageSubmission(imageUrl, jsonUrl, c.kind);
+        lines.push(reportLine(true, c.label, `${out.dim.width}x${out.dim.height}`));
+      } catch (e) {
+        lines.push(reportLine(false, c.label, e instanceof Error ? e.message : String(e)));
+      }
+    }
+
+    // Q9–Q11: JWTs
+    const jwtCases = [
+      { label: "Q9 Labyrinth JWT", game: "labyrinth", input: jwtLabyrinth },
+      { label: "Q10 Detective JWT", game: "detective", input: jwtDetective },
+      { label: "Q11 Signal JWT", game: "signal", input: jwtSignal }
+    ];
+    for (const c of jwtCases) {
+      const tok = String(c.input?.value ?? "").trim();
+      if (!tok) {
+        lines.push(reportLine(null, c.label, "paste JWT"));
+        continue;
+      }
+      try {
+        const { header, payload } = parseJwt(tok);
+        if (header?.alg !== "ES256") throw new Error(`Expected ES256 JWT, got ${header?.alg ?? "unknown"}`);
+        const sigOk = await verifyJwtSignature(tok, GAME_JWKS);
+        if (!sigOk) throw new Error("JWT signature verification failed");
+        const email = normEmail(emailInput?.value);
+        if (email && normEmail(payload?.sub) !== email) throw new Error(`JWT sub must match ${email}`);
+        if (String(payload?.game ?? "") !== c.game) throw new Error(`JWT game must be ${c.game}, got ${payload?.game ?? "missing"}`);
+        const w = isoWeekId(new Date());
+        if (String(payload?.week_id ?? "") !== w) throw new Error(`JWT week_id must be ${w}, got ${payload?.week_id ?? "missing"}`);
+        lines.push(reportLine(true, c.label, `sub=${payload.sub}`));
+      } catch (e) {
+        lines.push(reportLine(false, c.label, e instanceof Error ? e.message : String(e)));
+      }
+    }
+
+    runAllReport.textContent = lines.join("\n");
+    setText(runAllStatus, "Done.", "#bbf7d0");
+    runAllBtn.disabled = false;
+  }
+
+  runAllBtn?.addEventListener("click", () => {
+    runAll().catch((e) => {
+      setText(runAllStatus, e instanceof Error ? e.message : String(e), "#fca5a5");
+      runAllBtn.disabled = false;
+    });
   });
 
   const setStatus = (msg, color) => {
