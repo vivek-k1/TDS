@@ -14,6 +14,13 @@ data/
 # Local debug
 debug.log
 
+# Local one-off extraction scripts / outputs
+extract_py.mjs
+extract_vo.mjs
+ga6_extracted_contract.py
+ga6_extracted_traintest.py
+ga6_extracted_idempotency.py
+
 # IDE / OS
 .idea/
 .vscode/
