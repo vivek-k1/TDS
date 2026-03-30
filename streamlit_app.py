@@ -100,12 +100,20 @@ def build_embedded_html(prefill_email: str | None = None, exam: str = "ga4") -> 
         answers_js = APP_PROJECT1_ANSWERS_JS.read_text(encoding="utf-8")
         p1_js = APP_PROJECT1_JS.read_text(encoding="utf-8") if APP_PROJECT1_JS.exists() else ""
 
-        old_p1 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
+        old_p1_v1 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
   <script src="app_project1_answers.js?v=1"></script>"""
+        old_p1_v2 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
+  <script src="app_project1_answers.js?v=2"></script>"""
+        old_p1_plain = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
+  <script src="app_project1_answers.js"></script>"""
         new_scripts = f"""  <script>{seedrandom_src}</script>
   <script>{answers_js}</script>
   <script>{p1_js}</script>"""
-        html = html.replace(old_p1, new_scripts)
+        html = (
+            html.replace(old_p1_v1, new_scripts)
+            .replace(old_p1_v2, new_scripts)
+            .replace(old_p1_plain, new_scripts)
+        )
     else:
         ga5 = exam == "ga5"
         index_file = INDEX_GA5_HTML if ga5 else INDEX_HTML
