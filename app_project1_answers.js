@@ -352,6 +352,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       </div>
     </div>
   `;
+  results.style.display = "block";
 
   const hashInput = document.getElementById("p1-q2-hash");
   const numberInput = document.getElementById("p1-q2-number");
