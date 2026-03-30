@@ -45,7 +45,7 @@ GA4_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga4"
 # Assumed patterns for GA5 and Project 1 exam pages; update if your URLs differ.
 GA5_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga5"
 GA6_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga6"
-PROJECT1_URL = "https://exam.sanand.workers.dev/tds-2026-01-project1"
+PROJECT1_URL = "https://exam.sanand.workers.dev/tds-2026-01-p1"
 # Pyodide fetches ga6_py_*.py; Streamlit iframe has no local static origin — use CDN (override via env).
 GA6_PY_FETCH_PREFIX = os.environ.get(
     "GA6_PY_FETCH_PREFIX",
