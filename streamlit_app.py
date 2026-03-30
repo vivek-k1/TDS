@@ -37,6 +37,9 @@ APP_GA6_EMBEDDINGS_JS = BASE / "app_ga6_embeddings_data.js"
 APP_GA6_JS = BASE / "app_ga6.js"
 APP_GA6_MORE_JS = BASE / "app_ga6_more.js"
 GA6_TOKEN_MISER_POOLS_JS = BASE / "ga6_token_miser_pools.js"
+INDEX_PROJECT1_HTML = BASE / "index_project1.html"
+APP_PROJECT1_ANSWERS_JS = BASE / "app_project1_answers.js"
+APP_PROJECT1_JS = BASE / "app_project1.js"
 SEEDRANDOM_JS = BASE / "seedrandom.min.js"
 DATA_DIR = BASE / "data"
 CHECKS_FILE = DATA_DIR / "checks.txt"
@@ -66,7 +69,7 @@ def load_seedrandom():
 def build_embedded_html(prefill_email: str | None = None, exam: str = "ga4") -> str:
     """Build HTML with Bootstrap + seedrandom + app JS inlined for iframe embedding.
 
-    exam: \"ga4\" | \"ga5\" | \"ga6\"
+    exam: \"ga4\" | \"ga5\" | \"ga6\" | \"p1\"
     """
     if exam == "ga6":
         index_file = INDEX_GA6_HTML
@@ -89,6 +92,20 @@ def build_embedded_html(prefill_email: str | None = None, exam: str = "ga4") -> 
   <script>{app6}</script>
   <script>{more6}</script>"""
         html = html.replace(old_ga6, new_scripts)
+    elif exam == "p1":
+        index_file = INDEX_PROJECT1_HTML
+        html = index_file.read_text(encoding="utf-8")
+
+        seedrandom_src = load_seedrandom()
+        answers_js = APP_PROJECT1_ANSWERS_JS.read_text(encoding="utf-8")
+        p1_js = APP_PROJECT1_JS.read_text(encoding="utf-8") if APP_PROJECT1_JS.exists() else ""
+
+        old_p1 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
+  <script src="app_project1_answers.js?v=1"></script>"""
+        new_scripts = f"""  <script>{seedrandom_src}</script>
+  <script>{answers_js}</script>
+  <script>{p1_js}</script>"""
+        html = html.replace(old_p1, new_scripts)
     else:
         ga5 = exam == "ga5"
         index_file = INDEX_GA5_HTML if ga5 else INDEX_HTML
@@ -108,7 +125,15 @@ def build_embedded_html(prefill_email: str | None = None, exam: str = "ga4") -> 
 
     if prefill_email:
         esc = prefill_email.replace("\\", "\\\\").replace('"', '\\"').replace("<", "\\u003c")
-        inject = f'<script>document.addEventListener("DOMContentLoaded",function(){{var e=document.getElementById("emailInput");if(e)e.value="{esc}";}});</script>'
+        if exam == "p1":
+            inject = (
+                '<script>document.addEventListener("DOMContentLoaded",function(){'
+                f'var e=document.getElementById("p1-email");'
+                f'if(e){{e.value="{esc}";e.dispatchEvent(new Event("input"));}}'
+                '});</script>'
+            )
+        else:
+            inject = f'<script>document.addEventListener("DOMContentLoaded",function(){{var e=document.getElementById("emailInput");if(e)e.value="{esc}";}});</script>'
         html = html.replace("</body>", inject + "\n</body>")
 
     return html
@@ -250,18 +275,13 @@ def main():
         )
     else:
         st.caption(
-            f"Embedded Project 1 exam page from [{PROJECT1_URL}]({PROJECT1_URL})."
+            f"Project 1 helper for [{PROJECT1_URL}]({PROJECT1_URL})."
         )
 
     render_adsense()
 
-    # Project 1: embed the official exam site directly in iframe.
-    if exam_choice == "Project 1":
-        components.iframe(PROJECT1_URL, height=900, scrolling=True)
-        return
-
-    # GA4 / GA5 / GA6: local answer checker using embedded HTML + inlined JS
-    exam_key = {"GA4": "ga4", "GA5": "ga5", "GA6": "ga6"}[exam_choice]
+    # Local answer checker using embedded HTML + inlined JS
+    exam_key = {"GA4": "ga4", "GA5": "ga5", "GA6": "ga6", "Project 1": "p1"}[exam_choice]
     if exam_key == "ga6":
         required = [
             INDEX_GA6_HTML,
@@ -272,6 +292,8 @@ def main():
         ]
     elif exam_key == "ga5":
         required = [INDEX_GA5_HTML, APP_GA5_JS]
+    elif exam_key == "p1":
+        required = [INDEX_PROJECT1_HTML, APP_PROJECT1_ANSWERS_JS]
     else:
         required = [INDEX_HTML, APP_JS]
     for path in required:
