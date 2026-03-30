@@ -114,6 +114,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div class="flex-grow-1">
           <div class="q-title">Compute / Validate All</div>
           <div class="q-filter mt-1">Computes what is computable (Q1/Q2) and validates filled fields for the manual questions.</div>
+          <div class="mt-3">
+            <div class="answer-label">Optional: GitHub token (for Q3 checks only)</div>
+            <input
+              id="p1-gh-token"
+              type="password"
+              class="form-control"
+              placeholder="ghp_... (stored locally in your browser, used only for api.github.com)"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <div class="form-text">Use a PAT with minimal scope (classic: <code>public_repo</code>). Do not paste your password.</div>
+          </div>
           <div class="mt-3 d-flex align-items-center gap-3 flex-wrap">
             <button type="button" id="p1-run-all" class="btn btn-sm btn-outline-success" style="border-radius:999px;">
               Compute / Validate All
@@ -409,6 +421,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const runAllBtn = document.getElementById("p1-run-all");
   const runAllStatus = document.getElementById("p1-run-all-status");
   const runAllReport = document.getElementById("p1-run-all-report");
+  const ghTokenInput = document.getElementById("p1-gh-token");
 
   function normEmail(s) {
     return String(s ?? "").trim().toLowerCase();
@@ -450,8 +463,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return url;
   }
 
-  async function fetchJsonNoStore(url) {
-    const res = await fetch(url, { cache: "no-store" });
+  async function fetchJsonNoStore(url, token = null) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+    const res = await fetch(url, { cache: "no-store", headers });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   }
@@ -534,8 +548,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function validatePrViaGithubApi(url) {
     const { owner, repo, number } = validateGithubPrUrl(url);
-    const pr = await fetchJsonNoStore(`https://api.github.com/repos/${owner}/${repo}/pulls/${number}`);
-    const repoInfo = await fetchJsonNoStore(`https://api.github.com/repos/${owner}/${repo}`);
+    const tok = String(ghTokenInput?.value ?? "").trim() || null;
+    const pr = await fetchJsonNoStore(`https://api.github.com/repos/${owner}/${repo}/pulls/${number}`, tok);
+    const repoInfo = await fetchJsonNoStore(`https://api.github.com/repos/${owner}/${repo}`, tok);
     const stars = Number(repoInfo?.stargazers_count ?? 0);
     if (stars < 1000) throw new Error(`Repo has only ${stars} stars (needs 1000+)`);
     const mergedAt = pr?.merged_at ? Date.parse(pr.merged_at) : NaN;
