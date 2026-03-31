@@ -37,6 +37,8 @@ APP_GA6_EMBEDDINGS_JS = BASE / "app_ga6_embeddings_data.js"
 APP_GA6_JS = BASE / "app_ga6.js"
 APP_GA6_MORE_JS = BASE / "app_ga6_more.js"
 GA6_TOKEN_MISER_POOLS_JS = BASE / "ga6_token_miser_pools.js"
+INDEX_GA7_HTML = BASE / "index_ga7.html"
+APP_GA7_JS = BASE / "app_ga7.js"
 INDEX_PROJECT1_HTML = BASE / "index_project1.html"
 APP_PROJECT1_ANSWERS_JS = BASE / "app_project1_answers.js"
 APP_PROJECT1_JS = BASE / "app_project1.js"
@@ -48,6 +50,7 @@ GA4_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga4"
 # Assumed patterns for GA5 and Project 1 exam pages; update if your URLs differ.
 GA5_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga5"
 GA6_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga6"
+GA7_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga7"
 PROJECT1_URL = "https://exam.sanand.workers.dev/tds-2026-01-p1"
 # Pyodide fetches ga6_py_*.py; Streamlit iframe has no local static origin — use CDN (override via env).
 GA6_PY_FETCH_PREFIX = os.environ.get(
@@ -69,7 +72,7 @@ def load_seedrandom():
 def build_embedded_html(prefill_email: str | None = None, exam: str = "ga4") -> str:
     """Build HTML with Bootstrap + seedrandom + app JS inlined for iframe embedding.
 
-    exam: \"ga4\" | \"ga5\" | \"ga6\" | \"p1\"
+    exam: \"ga4\" | \"ga5\" | \"ga6\" | \"ga7\" | \"p1\"
     """
     if exam == "ga6":
         index_file = INDEX_GA6_HTML
@@ -92,6 +95,18 @@ def build_embedded_html(prefill_email: str | None = None, exam: str = "ga4") -> 
   <script>{app6}</script>
   <script>{more6}</script>"""
         html = html.replace(old_ga6, new_scripts)
+    elif exam == "ga7":
+        index_file = INDEX_GA7_HTML
+        html = index_file.read_text(encoding="utf-8")
+
+        seedrandom_src = load_seedrandom()
+        app7_js_src = APP_GA7_JS.read_text(encoding="utf-8")
+
+        old_ga7 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
+  <script src="app_ga7.js?v=1"></script>"""
+        new_scripts = f"""  <script>{seedrandom_src}</script>
+  <script>{app7_js_src}</script>"""
+        html = html.replace(old_ga7, new_scripts)
     elif exam == "p1":
         index_file = INDEX_PROJECT1_HTML
         html = index_file.read_text(encoding="utf-8")
@@ -259,7 +274,7 @@ def main():
 
     exam_choice = st.selectbox(
         "Exam / Project",
-        ("GA4", "GA5", "GA6", "Project 1"),
+        ("GA4", "GA5", "GA6", "GA7", "Project 1"),
         index=0,
     )
 
@@ -281,6 +296,12 @@ def main():
             f"[TDS 2026-01 GA6]({GA6_URL}) "
             "using your registered email. Python items load via Pyodide from the published repo (jsDelivr)."
         )
+    elif exam_choice == "GA7":
+        st.caption(
+            "Compute answers for "
+            f"[TDS 2026-01 GA7]({GA7_URL}) "
+            "using your registered email."
+        )
     else:
         st.caption(
             f"Project 1 helper for [{PROJECT1_URL}]({PROJECT1_URL})."
@@ -289,7 +310,7 @@ def main():
     render_adsense()
 
     # Local answer checker using embedded HTML + inlined JS
-    exam_key = {"GA4": "ga4", "GA5": "ga5", "GA6": "ga6", "Project 1": "p1"}[exam_choice]
+    exam_key = {"GA4": "ga4", "GA5": "ga5", "GA6": "ga6", "GA7": "ga7", "Project 1": "p1"}[exam_choice]
     if exam_key == "ga6":
         required = [
             INDEX_GA6_HTML,
@@ -298,6 +319,8 @@ def main():
             APP_GA6_JS,
             APP_GA6_MORE_JS,
         ]
+    elif exam_key == "ga7":
+        required = [INDEX_GA7_HTML, APP_GA7_JS]
     elif exam_key == "ga5":
         required = [INDEX_GA5_HTML, APP_GA5_JS]
     elif exam_key == "p1":

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TDS GA5 - Answer Checker</title>
+  <title>TDS GA7 - Answer Checker</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     :root {
@@ -12,27 +12,27 @@
       --bg-input: #334155;
       --text-primary: #f1f5f9;
       --text-muted: #94a3b8;
-      --accent: #a78bfa;
-      --accent-hover: #c4b5fd;
+      --accent: #38bdf8;
+      --accent-hover: #7dd3fc;
       --success: #4ade80;
       --border: #475569;
     }
     body {
       background: var(--bg-primary);
       color: var(--text-primary);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
       min-height: 100vh;
     }
     .hero {
-      background: linear-gradient(135deg, #2e1a47 0%, #0f172a 50%, #1a1a2e 100%);
+      background: linear-gradient(135deg, #0b2a3a 0%, #0f172a 50%, #1a1a2e 100%);
       border-bottom: 1px solid var(--border);
       padding: 3rem 0;
     }
     .hero h1 { font-weight: 700; letter-spacing: -0.02em; }
     .hero .badge-custom {
-      background: rgba(167, 139, 250, 0.15);
+      background: rgba(56, 189, 248, 0.15);
       color: var(--accent);
-      border: 1px solid rgba(167, 139, 250, 0.3);
+      border: 1px solid rgba(56, 189, 248, 0.3);
       font-size: 0.85rem;
       padding: 0.35em 0.75em;
       border-radius: 999px;
@@ -52,7 +52,7 @@
       background: var(--bg-input);
       border-color: var(--accent);
       color: var(--text-primary);
-      box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
     }
     .form-control-dark::placeholder { color: var(--text-muted); }
     .btn-accent {
@@ -81,15 +81,19 @@
     }
     .answer-card:hover {
       border-color: var(--accent);
-      box-shadow: 0 4px 24px rgba(167, 139, 250, 0.08);
+      box-shadow: 0 4px 24px rgba(56, 189, 248, 0.08);
     }
     .answer-card .q-number {
       background: var(--accent);
       color: var(--bg-primary);
-      width: 32px; height: 32px;
+      width: 32px;
+      height: 32px;
       border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
       flex-shrink: 0;
     }
     .answer-card .q-title {
@@ -106,11 +110,13 @@
       border: 1px solid rgba(74, 222, 128, 0.25);
       border-radius: 8px;
       padding: 0.75rem 1rem;
-      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-      font-size: 0.95rem;
+      font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+      font-size: 0.85rem;
       color: var(--success);
-      word-break: break-all;
+      word-break: break-word;
       white-space: pre-wrap;
+      max-height: 280px;
+      overflow: auto;
     }
     .answer-label {
       font-size: 0.75rem;
@@ -120,7 +126,6 @@
       font-weight: 600;
       margin-bottom: 0.25rem;
     }
-    .spinner-border-sm { width: 1rem; height: 1rem; border-width: 0.15em; }
     #results { display: none; }
     .copy-btn {
       background: transparent;
@@ -138,8 +143,8 @@
     }
     .text-accent { color: var(--accent) !important; }
     .note-box {
-      background: rgba(167, 139, 250, 0.08);
-      border: 1px solid rgba(167, 139, 250, 0.2);
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.2);
       border-radius: 8px;
       padding: 1rem;
       font-size: 0.9rem;
@@ -151,17 +156,17 @@
   <div class="hero">
     <div class="container">
       <div class="d-flex align-items-center gap-3 mb-2">
-        <h1 class="mb-0">TDS GA5</h1>
+        <h1 class="mb-0">TDS GA7</h1>
         <span class="badge-custom">Answer Checker</span>
       </div>
       <p class="text-muted mb-0" style="font-size:1.05rem;">
-        Compute answers for <a href="https://exam.sanand.workers.dev/tds-2026-01-ga5" target="_blank" class="text-accent text-decoration-none">TDS 2026-01 GA5</a> questions based on your email.
+        Helper for <a href="https://exam.sanand.workers.dev/tds-2026-01-ga7" target="_blank" class="text-accent text-decoration-none">TDS 2026-01 GA7</a> questions based on your email.
       </p>
       <nav class="mt-3 small" aria-label="Other answer checkers">
         <span class="text-muted me-2">Also:</span>
         <a href="index.html" class="text-accent text-decoration-none me-2">GA4</a>
+        <a href="index_ga5.html" class="text-accent text-decoration-none me-2">GA5</a>
         <a href="index_ga6.html" class="text-accent text-decoration-none me-2">GA6</a>
-        <a href="index_ga7.html" class="text-accent text-decoration-none me-2">GA7</a>
         <a href="index_project1.html" class="text-accent text-decoration-none">Project 1</a>
       </nav>
     </div>
@@ -169,19 +174,19 @@
 
   <div class="container py-4">
     <div class="row justify-content-center">
-      <div class="col-lg-8">
+      <div class="col-lg-9">
         <div class="card-dark p-4 mb-4">
           <label for="emailInput" class="form-label fw-semibold">Your registered email</label>
-          <div class="d-flex gap-2">
+          <div class="d-flex gap-2 flex-wrap">
             <input type="email" class="form-control form-control-dark flex-grow-1" id="emailInput"
                    placeholder="you@example.com" required>
-            <button class="btn btn-accent" id="computeBtn" onclick="computeAllAnswersGA5()">
+            <button class="btn btn-accent" id="computeBtn" type="button" onclick="computeAllAnswersGA7()">
               Compute Answers
             </button>
           </div>
           <div class="note-box mt-3">
-            Answers are generated client-side using deterministic seeded RNG (plus a browser-side computation for Q15).
-            Q12/Q16 display SQL templates; all other GA5 questions show an exact computed answer.
+            GA7 contains several “repair” tasks. This helper generates deterministic, checker-compatible submissions
+            for supported GA7 question IDs.
           </div>
         </div>
 
@@ -196,6 +201,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
-  <script src="app_ga5.js?v=1"></script>
+  <script src="app_ga7.js?v=1"></script>
 </body>
 </html>
+
