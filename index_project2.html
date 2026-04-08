@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TDS Project 2 - PicoSolver Hub</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-card: #1e293b;
+      --text-primary: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent: #f97316;
+      --accent-hover: #fb923c;
+      --border: #475569;
+    }
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+    .hero {
+      background: linear-gradient(135deg, rgba(249,115,22,0.25) 0%, #0f172a 50%, #1a1a2e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 0 2rem;
+    }
+    .hero h1 { font-weight: 700; letter-spacing: -0.02em; }
+    .badge-custom {
+      background: rgba(249, 115, 22, 0.14);
+      color: #fed7aa;
+      border: 1px solid rgba(249, 115, 22, 0.3);
+      font-size: 0.85rem;
+      padding: 0.35em 0.75em;
+      border-radius: 999px;
+    }
+    .text-accent { color: #fdba74 !important; }
+    .card-dark {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .btn-accent {
+      background: var(--accent);
+      color: #020617;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      padding: 0.55rem 1rem;
+      transition: all 0.18s ease;
+    }
+    .btn-accent:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+    .iframe-shell {
+      border: 1px solid rgba(148,163,184,0.22);
+      border-radius: 14px;
+      overflow: hidden;
+      background: #020617;
+      box-shadow: 0 18px 50px rgba(2,6,23,0.55);
+    }
+    .embed-iframe {
+      width: 100%;
+      height: min(78vh, 980px);
+      border: 0;
+      display: block;
+      background: #020617;
+    }
+    @media (max-width: 575.98px) {
+      .embed-iframe { height: 76vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="container">
+      <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+        <h1 class="mb-0">TDS Project 2</h1>
+        <span class="badge-custom">Embedded app</span>
+      </div>
+      <p class="text-muted mb-0" style="font-size:1.05rem;">
+        Embed of <a class="text-accent text-decoration-none" href="https://picosolver-hub.onrender.com/" target="_blank" rel="noopener">PicoSolver Hub</a>.
+      </p>
+      <nav class="mt-3 small" aria-label="Other answer checkers">
+        <span class="text-muted me-2">Also:</span>
+        <a href="index.html" class="text-accent text-decoration-none me-2">GA4</a>
+        <a href="index_ga5.html" class="text-accent text-decoration-none me-2">GA5</a>
+        <a href="index_ga6.html" class="text-accent text-decoration-none me-2">GA6</a>
+        <a href="index_ga7.html" class="text-accent text-decoration-none me-2">GA7</a>
+        <a href="index_project1.html" class="text-accent text-decoration-none">Project 1</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="container py-4">
+    <div class="row justify-content-center">
+      <div class="col-12">
+        <div class="card-dark p-3 p-md-4 mb-3">
+          <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+            <div class="small text-muted">
+              If the embed stays blank, the site may be blocking iframes (via security headers).
+              Use the button to open it directly.
+            </div>
+            <a class="btn btn-accent" href="https://picosolver-hub.onrender.com/" target="_blank" rel="noopener">
+              Open PicoSolver Hub
+            </a>
+          </div>
+        </div>
+
+        <div class="iframe-shell">
+          <iframe
+            class="embed-iframe"
+            src="https://picosolver-hub.onrender.com/"
+            title="PicoSolver Hub"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            allow="clipboard-read; clipboard-write; fullscreen"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
