@@ -42,6 +42,8 @@ APP_GA7_JS = BASE / "app_ga7.js"
 INDEX_PROJECT1_HTML = BASE / "index_project1.html"
 APP_PROJECT1_ANSWERS_JS = BASE / "app_project1_answers.js"
 APP_PROJECT1_JS = BASE / "app_project1.js"
+INDEX_PROJECT2_HTML = BASE / "index_project2.html"
+APP_PROJECT2_ANSWERS_JS = BASE / "app_project2_answers.js"
 SEEDRANDOM_JS = BASE / "seedrandom.min.js"
 DATA_DIR = BASE / "data"
 CHECKS_FILE = DATA_DIR / "checks.txt"
@@ -52,6 +54,7 @@ GA5_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga5"
 GA6_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga6"
 GA7_URL = "https://exam.sanand.workers.dev/tds-2026-01-ga7"
 PROJECT1_URL = "https://exam.sanand.workers.dev/tds-2026-01-p1"
+PROJECT2_URL = "https://exam.sanand.workers.dev/tds-2026-01-p2"
 # Pyodide fetches ga6_py_*.py; Streamlit iframe has no local static origin — use CDN (override via env).
 GA6_PY_FETCH_PREFIX = os.environ.get(
     "GA6_PY_FETCH_PREFIX",
@@ -72,7 +75,7 @@ def load_seedrandom():
 def build_embedded_html(prefill_email: str | None = None, exam: str = "ga4") -> str:
     """Build HTML with Bootstrap + seedrandom + app JS inlined for iframe embedding.
 
-    exam: \"ga4\" | \"ga5\" | \"ga6\" | \"ga7\" | \"p1\"
+    exam: \"ga4\" | \"ga5\" | \"ga6\" | \"ga7\" | \"p1\" | \"p2\"
     """
     if exam == "ga6":
         index_file = INDEX_GA6_HTML
@@ -129,6 +132,18 @@ def build_embedded_html(prefill_email: str | None = None, exam: str = "ga4") -> 
             .replace(old_p1_v2, new_scripts)
             .replace(old_p1_plain, new_scripts)
         )
+    elif exam == "p2":
+        index_file = INDEX_PROJECT2_HTML
+        html = index_file.read_text(encoding="utf-8")
+
+        seedrandom_src = load_seedrandom()
+        answers_js = APP_PROJECT2_ANSWERS_JS.read_text(encoding="utf-8")
+
+        old_p2 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
+  <script src="app_project2_answers.js?v=1"></script>"""
+        new_scripts = f"""  <script>{seedrandom_src}</script>
+  <script>{answers_js}</script>"""
+        html = html.replace(old_p2, new_scripts)
     else:
         ga5 = exam == "ga5"
         index_file = INDEX_GA5_HTML if ga5 else INDEX_HTML
@@ -152,6 +167,13 @@ def build_embedded_html(prefill_email: str | None = None, exam: str = "ga4") -> 
             inject = (
                 '<script>document.addEventListener("DOMContentLoaded",function(){'
                 f'var e=document.getElementById("p1-email");'
+                f'if(e){{e.value="{esc}";e.dispatchEvent(new Event("input"));}}'
+                '});</script>'
+            )
+        elif exam == "p2":
+            inject = (
+                '<script>document.addEventListener("DOMContentLoaded",function(){'
+                f'var e=document.getElementById("p2-email");'
                 f'if(e){{e.value="{esc}";e.dispatchEvent(new Event("input"));}}'
                 '});</script>'
             )
@@ -274,7 +296,7 @@ def main():
 
     exam_choice = st.selectbox(
         "Exam / Project",
-        ("GA4", "GA5", "GA6", "GA7", "Project 1"),
+        ("GA4", "GA5", "GA6", "GA7", "Project 1", "Project 2"),
         index=0,
     )
 
@@ -302,15 +324,26 @@ def main():
             f"[TDS 2026-01 GA7]({GA7_URL}) "
             "using your registered email."
         )
-    else:
+    elif exam_choice == "Project 1":
         st.caption(
             f"Project 1 helper for [{PROJECT1_URL}]({PROJECT1_URL})."
+        )
+    else:
+        st.caption(
+            f"Project 2 helper for [{PROJECT2_URL}]({PROJECT2_URL})."
         )
 
     render_adsense()
 
     # Local answer checker using embedded HTML + inlined JS
-    exam_key = {"GA4": "ga4", "GA5": "ga5", "GA6": "ga6", "GA7": "ga7", "Project 1": "p1"}[exam_choice]
+    exam_key = {
+        "GA4": "ga4",
+        "GA5": "ga5",
+        "GA6": "ga6",
+        "GA7": "ga7",
+        "Project 1": "p1",
+        "Project 2": "p2",
+    }[exam_choice]
     if exam_key == "ga6":
         required = [
             INDEX_GA6_HTML,
@@ -325,6 +358,8 @@ def main():
         required = [INDEX_GA5_HTML, APP_GA5_JS]
     elif exam_key == "p1":
         required = [INDEX_PROJECT1_HTML, APP_PROJECT1_ANSWERS_JS]
+    elif exam_key == "p2":
+        required = [INDEX_PROJECT2_HTML, APP_PROJECT2_ANSWERS_JS]
     else:
         required = [INDEX_HTML, APP_JS]
     for path in required:
@@ -347,7 +382,8 @@ def main():
         prefill = None
 
     embedded = build_embedded_html(prefill_email=prefill, exam=exam_key)
-    components.html(embedded, height=900, scrolling=True)
+    iframe_h = 1100 if exam_key == "p2" else 900
+    components.html(embedded, height=iframe_h, scrolling=True)
 
 
 if __name__ == "__main__":
