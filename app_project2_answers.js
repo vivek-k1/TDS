@@ -6,9 +6,149 @@
  * fetch usually fails CORS or 403 — paste the Network response body instead.
  */
 const P2_EXAM_ORIGIN = "https://exam.sanand.workers.dev";
-const P2_EXAM_PAGE = `${P2_EXAM_ORIGIN}/tds-2026-01-p2`;
+/** Overridden by Streamlit embed: `globalThis.P2_EXAM_PATH` (e.g. `/tds-2026-01-p2b`). */
+const P2_EXAM_PATH =
+  typeof globalThis !== "undefined" && globalThis.P2_EXAM_PATH
+    ? String(globalThis.P2_EXAM_PATH).replace(/^\/*/, "/")
+    : "/tds-2026-01-p2";
+const P2_EXAM_PAGE = `${P2_EXAM_ORIGIN}${P2_EXAM_PATH.startsWith("/") ? P2_EXAM_PATH : `/${P2_EXAM_PATH}`}`;
 const Q_ONION = "q-onion-scrape-server";
 const Q_CRYPTO = "q-crypto-transfers-server";
+
+/** [Project-2 HUB — QR-Trace Solana Solver](https://p2-solver.onrender.com/qr-trace) */
+const P2_QR_SOLVER_URL = "https://p2-solver.onrender.com/qr-trace";
+
+/** Paste into the exam portal DevTools console (Q1 — onion iframe harvest). */
+const P2_CONSOLE_SCRIPT_Q1 = `/* OMEGA PORTAL SIPHON v4.1 (Onion-Server Targeted) */
+(function() {
+    console.log("%c SINGULARITY DISCOVERY ACTIVE v4.1 ", "background: #000; color: #0f0; font-weight: bold;");
+    
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) { console.error("Identity not found. Please log in first."); return; }
+
+    let results = {
+        email: user.email,
+        quizSign: user.quizSign,
+        mission: []
+    };
+
+    const harvest = (doc) => {
+        // Look for the standard task structure inside the target frame
+        doc.querySelectorAll('.question-item').forEach(item => {
+            let num = item.querySelector('.q-num')?.innerText.trim() || "";
+            let theme = item.querySelector('.q-theme')?.innerText.trim() || "";
+            let query = item.querySelector('.q-text')?.innerText.trim() || "";
+            let link = item.querySelector('.q-link')?.href || "";
+            
+            let folder = null;
+            if (link) {
+                let match = link.match(/\\.onion\\/(\\d+)\\//);
+                if (match) folder = parseInt(match[1]);
+            }
+
+            if (num) {
+                results.mission.push({ num, theme, query, folder, link });
+            }
+        });
+    };
+
+    // --- NEW TARGETED SELECTION ---
+    // We look for the iframe by ID or Name: 'q-onion-scrape-server' or 'questionId'
+    const selectors = [
+        'iframe#q-onion-scrape-server',
+        'iframe[name="q-onion-scrape-server"]',
+        'iframe#questionId',
+        'iframe[name="questionId"]'
+    ];
+    
+    let targetFrame = null;
+    for (let selector of selectors) {
+        targetFrame = document.querySelector(selector);
+        if (targetFrame) break;
+    }
+    
+    if (targetFrame) {
+        console.log("%c Target Frame Locked: " + (targetFrame.id || targetFrame.name), "color: #0f0; font-weight: bold;");
+        try {
+            harvest(targetFrame.contentDocument || targetFrame.contentWindow.document);
+        } catch(e) {
+            console.error("Access blocked by browser security (CORS). Try running this script while the iframe is focused.");
+        }
+    } else {
+        // Absolute fallback: Search all iframes but ONLY harvest the one containing '.onion'
+        console.warn("Target ID not found. Searching for Onion-linked frames...");
+        document.querySelectorAll('iframe').forEach(frame => {
+            try {
+                const frameDoc = frame.contentDocument || frame.contentWindow.document;
+                if (frameDoc.body.innerHTML.includes('.onion')) {
+                    console.log("%c Auto-detected Onion Frame!", "color: #0ff;");
+                    harvest(frameDoc);
+                }
+            } catch(e) {}
+        });
+    }
+
+    if (results.mission.length === 0) {
+        console.warn("CAPTURE FAILED: No tasks found in the 'q-onion-scrape-server' frame.");
+    } else {
+        console.log("%c SUCCESS: Q1 DATA EXTRACTED ", "color: #0ff; font-weight: bold;");
+        console.log(JSON.stringify(results, null, 2));
+    }
+})();`;
+
+/** Paste into the exam portal DevTools console (Q3 — damaged QR + masked signature). */
+const P2_CONSOLE_SCRIPT_Q3 = `/* OMEGA PORTAL SIPHON v5.1 (Aggressive Q3 Search) */
+(function() {
+    console.log("%c CRYPTO-TRACE DISCOVERY ACTIVE v5.1 ", "background: #101723; color: #d9ecff; font-weight: bold;");
+    
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) { console.error("Identity not found."); return; }
+
+    let q3Data = {
+        email: user.email,
+        quizSign: user.quizSign,
+        type: "q3_qr_trace",
+        maskedSignature: "",
+        qrSvg: ""
+    };
+
+    const harvest = (doc) => {
+        // Look for the QR SVG by ID
+        const svgElement = doc.querySelector('svg#damaged-qr');
+        // Look for the Masked Signature by the specific class
+        const codeElement = doc.querySelector('.masked code');
+
+        if (svgElement && codeElement) {
+            q3Data.qrSvg = svgElement.outerHTML;
+            q3Data.maskedSignature = codeElement.innerText.trim();
+            return true;
+        }
+        return false;
+    };
+
+    // 1. Check the main document first
+    let found = harvest(document);
+
+    // 2. If not found, check all iframes
+    if (!found) {
+        document.querySelectorAll('iframe').forEach(frame => {
+            try {
+                const frameDoc = frame.contentDocument || frame.contentWindow.document;
+                if (harvest(frameDoc)) {
+                    found = true;
+                    console.log("%c Found Q3 data in frame: " + (frame.id || frame.name || "unnamed"), "color: #0f0;");
+                }
+            } catch(e) {}
+        });
+    }
+
+    if (found) {
+        console.log("%c Q3 DATA CAPTURED SUCCESSFULLY ", "color: #0ff; font-weight: bold;");
+        console.log(JSON.stringify(q3Data, null, 2));
+    } else {
+        console.error("CAPTURE FAILED: Could not find the Damaged QR or the Masked Signature. Ensure the Q3 mission is visible on your screen.");
+    }
+})();`;
 
 function escapeHtml(s) {
   const div = document.createElement("div");
@@ -258,6 +398,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
     <div class="answer-card mb-3">
       <div class="d-flex align-items-start gap-3">
+        <div class="q-number">1–3</div>
+        <div class="flex-grow-1">
+          <div class="q-title">QR-Trace &amp; early missions (Q1–Q3)</div>
+          <div class="q-filter mt-1">
+            The <strong>QR-Trace Solana Solver</strong> runs inline below (embedded from Project-2 HUB). Paste mission JSON into the tool without leaving this page.
+          </div>
+          <div class="mt-2 rounded overflow-hidden border border-secondary shadow-sm" style="background: rgba(15, 23, 42, 0.85)">
+            <iframe
+              id="p2-qr-solver-frame"
+              src="${P2_QR_SOLVER_URL}"
+              title="QR-Trace Solana Solver — Project-2 HUB (embedded)"
+              class="w-100 d-block"
+              style="min-height: min(72vh, 720px); height: 72vh; border: 0"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              allow="clipboard-write; fullscreen"
+            ></iframe>
+          </div>
+          <p class="small text-muted mt-2 mb-0">
+            If the frame stays blank, your browser or the host may block embedding — then
+            <a href="${P2_QR_SOLVER_URL}" target="_blank" rel="noopener" class="text-warning">open the solver in a new tab</a>.
+          </p>
+          <p class="small text-muted mt-2 mb-0">
+            Q2 uses the same solver workflow as Q1–Q3. For <strong>Q1</strong> and <strong>Q3</strong>, copy the scripts below, paste into <strong>DevTools → Console</strong> on the <em>exam portal</em> (while logged in), then use the printed JSON in the solver.
+          </p>
+
+          <div class="mt-3">
+            <div class="answer-label">Q1 — console script (OMEGA PORTAL SIPHON v4.1)</div>
+            <textarea id="p2-console-q1" class="form-control font-monospace small mt-1" rows="14" spellcheck="false" readonly style="resize: vertical"></textarea>
+            <button type="button" class="copy-btn mt-1" id="p2-copy-console-q1">Copy Q1 script</button>
+          </div>
+
+          <div class="mt-3">
+            <div class="answer-label">Q3 — console script (OMEGA PORTAL SIPHON v5.1)</div>
+            <textarea id="p2-console-q3" class="form-control font-monospace small mt-1" rows="12" spellcheck="false" readonly style="resize: vertical"></textarea>
+            <button type="button" class="copy-btn mt-1" id="p2-copy-console-q3">Copy Q3 script</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="answer-card mb-3">
+      <div class="d-flex align-items-start gap-3">
         <div class="q-number">◎</div>
         <div class="flex-grow-1">
           <div class="q-title">Onion scraping challenge (<code>q-onion-scrape-server</code>)</div>
@@ -344,6 +527,11 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
   `;
 
+  const taQ1 = document.getElementById("p2-console-q1");
+  const taQ3 = document.getElementById("p2-console-q3");
+  if (taQ1) taQ1.value = P2_CONSOLE_SCRIPT_Q1;
+  if (taQ3) taQ3.value = P2_CONSOLE_SCRIPT_Q3;
+
   const emailEl = document.getElementById("p2-email");
   const quizEl = document.getElementById("p2-quiz-sign");
   const onionUrlEl = document.getElementById("p2-onion-url");
@@ -394,6 +582,15 @@ document.addEventListener("DOMContentLoaded", () => {
   emailEl.addEventListener("input", refreshUrls);
   quizEl.addEventListener("input", refreshUrls);
   taskRow.addEventListener("input", refreshOnionJson);
+
+  document.getElementById("p2-copy-console-q1")?.addEventListener("click", () => {
+    const el = document.getElementById("p2-console-q1");
+    copyText(document.getElementById("p2-copy-console-q1"), el ? el.value : P2_CONSOLE_SCRIPT_Q1);
+  });
+  document.getElementById("p2-copy-console-q3")?.addEventListener("click", () => {
+    const el = document.getElementById("p2-console-q3");
+    copyText(document.getElementById("p2-copy-console-q3"), el ? el.value : P2_CONSOLE_SCRIPT_Q3);
+  });
 
   document.getElementById("p2-copy-onion-url").addEventListener("click", () => {
     copyText(document.getElementById("p2-copy-onion-url"), onionUrlEl.textContent);
