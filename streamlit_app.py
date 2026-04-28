@@ -405,7 +405,7 @@ def main():
         prefill = None
 
     embedded = build_embedded_html(prefill_email=prefill, exam=exam_key)
-    iframe_h = 1600 if exam_key in ("p2", "p2b") else 900
+    iframe_h = 2800 if exam_key in ("p2", "p2b") else 900
     components.html(embedded, height=iframe_h, scrolling=True)
 
 

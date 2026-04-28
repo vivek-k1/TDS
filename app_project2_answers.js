@@ -15,8 +15,10 @@ const P2_EXAM_PAGE = `${P2_EXAM_ORIGIN}${P2_EXAM_PATH.startsWith("/") ? P2_EXAM_
 const Q_ONION = "q-onion-scrape-server";
 const Q_CRYPTO = "q-crypto-transfers-server";
 
-/** [Project-2 HUB — QR-Trace Solana Solver](https://p2-solver.onrender.com/qr-trace) */
-const P2_QR_SOLVER_URL = "https://p2-solver.onrender.com/qr-trace";
+/** Project-2 HUB solvers (embedded per question). */
+const P2_SOLVER_WEB_URL = "https://p2-solver.onrender.com/web";
+const P2_SOLVER_BLOCK_URL = "https://p2-solver.onrender.com/block";
+const P2_SOLVER_QR_TRACE_URL = "https://p2-solver.onrender.com/qr-trace";
 
 /** Paste into the exam portal DevTools console (Q1 — onion iframe harvest). */
 const P2_CONSOLE_SCRIPT_Q1 = `/* OMEGA PORTAL SIPHON v4.1 (Onion-Server Targeted) */
@@ -398,38 +400,86 @@ document.addEventListener("DOMContentLoaded", () => {
 
     <div class="answer-card mb-3">
       <div class="d-flex align-items-start gap-3">
-        <div class="q-number">1–3</div>
+        <div class="q-number">1</div>
         <div class="flex-grow-1">
-          <div class="q-title">QR-Trace &amp; early missions (Q1–Q3)</div>
+          <div class="q-title">Q1 · Web scraping solver</div>
           <div class="q-filter mt-1">
-            The <strong>QR-Trace Solana Solver</strong> runs inline below (embedded from Project-2 HUB). Paste mission JSON into the tool without leaving this page.
+            <strong>Web Scraping Solver</strong> — paste mission JSON from the exam below. If the frame is blank,
+            <a href="${P2_SOLVER_WEB_URL}" target="_blank" rel="noopener" class="text-warning">open <span class="font-monospace small">${escapeHtml(P2_SOLVER_WEB_URL)}</span></a>.
           </div>
           <div class="mt-2 rounded overflow-hidden border border-secondary shadow-sm" style="background: rgba(15, 23, 42, 0.85)">
             <iframe
-              id="p2-qr-solver-frame"
-              src="${P2_QR_SOLVER_URL}"
-              title="QR-Trace Solana Solver — Project-2 HUB (embedded)"
+              id="p2-solver-q1-frame"
+              src="${P2_SOLVER_WEB_URL}"
+              title="Q1 — Web Scraping Solver (Project-2 HUB)"
               class="w-100 d-block"
-              style="min-height: min(72vh, 720px); height: 72vh; border: 0"
+              style="min-height: 380px; height: 440px; border: 0"
               loading="lazy"
               referrerpolicy="no-referrer-when-downgrade"
               allow="clipboard-write; fullscreen"
             ></iframe>
           </div>
           <p class="small text-muted mt-2 mb-0">
-            If the frame stays blank, your browser or the host may block embedding — then
-            <a href="${P2_QR_SOLVER_URL}" target="_blank" rel="noopener" class="text-warning">open the solver in a new tab</a>.
+            Copy the script below → <strong>DevTools → Console</strong> on the <em>exam portal</em> (logged in) → paste the printed JSON into the solver above.
           </p>
-          <p class="small text-muted mt-2 mb-0">
-            Q2 uses the same solver workflow as Q1–Q3. For <strong>Q1</strong> and <strong>Q3</strong>, copy the scripts below, paste into <strong>DevTools → Console</strong> on the <em>exam portal</em> (while logged in), then use the printed JSON in the solver.
-          </p>
-
           <div class="mt-3">
             <div class="answer-label">Q1 — console script (OMEGA PORTAL SIPHON v4.1)</div>
             <textarea id="p2-console-q1" class="form-control font-monospace small mt-1" rows="14" spellcheck="false" readonly style="resize: vertical"></textarea>
             <button type="button" class="copy-btn mt-1" id="p2-copy-console-q1">Copy Q1 script</button>
           </div>
+        </div>
+      </div>
+    </div>
 
+    <div class="answer-card mb-3">
+      <div class="d-flex align-items-start gap-3">
+        <div class="q-number">2</div>
+        <div class="flex-grow-1">
+          <div class="q-title">Q2 · Blockchain vault transfer</div>
+          <div class="q-filter mt-1">
+            <strong>Blockchain Vault Transfer</strong> — enter exam fields and send on Devnet (respect the one-shot policy on the tool). If the frame is blank,
+            <a href="${P2_SOLVER_BLOCK_URL}" target="_blank" rel="noopener" class="text-warning">open in a new tab</a>.
+          </div>
+          <div class="mt-2 rounded overflow-hidden border border-secondary shadow-sm" style="background: rgba(15, 23, 42, 0.85)">
+            <iframe
+              id="p2-solver-q2-frame"
+              src="${P2_SOLVER_BLOCK_URL}"
+              title="Q2 — Blockchain Vault Transfer (Project-2 HUB)"
+              class="w-100 d-block"
+              style="min-height: 380px; height: 520px; border: 0"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              allow="clipboard-write; fullscreen"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="answer-card mb-3">
+      <div class="d-flex align-items-start gap-3">
+        <div class="q-number">3</div>
+        <div class="flex-grow-1">
+          <div class="q-title">Q3 · QR-Trace Solana Solver</div>
+          <div class="q-filter mt-1">
+            Repair damaged QR codes and trace Solana Devnet transactions. If the frame is blank,
+            <a href="${P2_SOLVER_QR_TRACE_URL}" target="_blank" rel="noopener" class="text-warning">open <span class="font-monospace small">${escapeHtml(P2_SOLVER_QR_TRACE_URL)}</span></a>.
+          </div>
+          <div class="mt-2 rounded overflow-hidden border border-secondary shadow-sm" style="background: rgba(15, 23, 42, 0.85)">
+            <iframe
+              id="p2-solver-q3-frame"
+              src="${P2_SOLVER_QR_TRACE_URL}"
+              title="Q3 — QR-Trace Solana Solver (Project-2 HUB)"
+              class="w-100 d-block"
+              style="min-height: 380px; height: 440px; border: 0"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              allow="clipboard-write; fullscreen"
+            ></iframe>
+          </div>
+          <p class="small text-muted mt-2 mb-0">
+            Copy the script below → <strong>DevTools → Console</strong> on the exam portal → paste mission JSON into the solver above.
+          </p>
           <div class="mt-3">
             <div class="answer-label">Q3 — console script (OMEGA PORTAL SIPHON v5.1)</div>
             <textarea id="p2-console-q3" class="form-control font-monospace small mt-1" rows="12" spellcheck="false" readonly style="resize: vertical"></textarea>
