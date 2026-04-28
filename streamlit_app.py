@@ -156,10 +156,7 @@ def build_embedded_html(prefill_email: str | None = None, exam: str = "ga4") -> 
 
         old_p2 = """  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
   <script src="app_project2_answers.js?v=1"></script>"""
-        path_setup = ""
-        if exam == "p2b":
-            path_setup = f'  <script>globalThis.P2_EXAM_PATH={json.dumps("/tds-2026-01-p2b")};</script>\n'
-        new_scripts = f"""{path_setup}  <script>{seedrandom_src}</script>
+        new_scripts = f"""  <script>{seedrandom_src}</script>
   <script>{answers_js}</script>"""
         html = html.replace(old_p2, new_scripts)
     else:
@@ -405,7 +402,7 @@ def main():
         prefill = None
 
     embedded = build_embedded_html(prefill_email=prefill, exam=exam_key)
-    iframe_h = 6000 if exam_key in ("p2", "p2b") else 900
+    iframe_h = 5200 if exam_key in ("p2", "p2b") else 900
     components.html(embedded, height=iframe_h, scrolling=True)
 
 
