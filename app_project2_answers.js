@@ -1,9 +1,9 @@
 "use strict";
 
 /**
- * Project 2 helper — Onion scraping JSON (task1–task12) + Solana Devnet crypto transfer.
+ * Project 2 helper — embedded Q1–Q4 solvers + DevTools console scripts for Q1/Q3 + Solana crypto transfer helper.
  * questionData is served from the exam origin (session cookie). From Streamlit / file://,
- * fetch usually fails CORS or 403 — paste the Network response body instead.
+ * fetch usually fails CORS or 403 — paste the Network response body for crypto where needed.
  */
 const P2_EXAM_ORIGIN = "https://exam.sanand.workers.dev";
 /** Overridden by Streamlit embed: `globalThis.P2_EXAM_PATH` (e.g. `/tds-2026-01-p2b`). */
@@ -12,13 +12,16 @@ const P2_EXAM_PATH =
     ? String(globalThis.P2_EXAM_PATH).replace(/^\/*/, "/")
     : "/tds-2026-01-p2";
 const P2_EXAM_PAGE = `${P2_EXAM_ORIGIN}${P2_EXAM_PATH.startsWith("/") ? P2_EXAM_PATH : `/${P2_EXAM_PATH}`}`;
-const Q_ONION = "q-onion-scrape-server";
 const Q_CRYPTO = "q-crypto-transfers-server";
 
 /** Project-2 HUB solvers (embedded per question). */
 const P2_SOLVER_WEB_URL = "https://p2-solver.onrender.com/web";
 const P2_SOLVER_BLOCK_URL = "https://p2-solver.onrender.com/block";
 const P2_SOLVER_QR_TRACE_URL = "https://p2-solver.onrender.com/qr-trace";
+
+/** Q4 — Hugging Face Space ([P2b-question-4](https://huggingface.co/spaces/orangeleo19/P2b-question-4)). */
+const P4_HF_SPACE_EMBED_URL = "https://orangeleo19-p2b-question-4.hf.space";
+const P4_HF_SPACE_PAGE_URL = "https://huggingface.co/spaces/orangeleo19/P2b-question-4";
 
 /** Paste into the exam portal DevTools console (Q1 — onion iframe harvest). */
 const P2_CONSOLE_SCRIPT_Q1 = `/* OMEGA PORTAL SIPHON v4.1 (Onion-Server Targeted) */
@@ -189,152 +192,6 @@ function buildQuestionDataUrl(email, quizSign, questionId) {
   return `${P2_EXAM_ORIGIN}/questionData?${p.toString()}`;
 }
 
-/** Recursively collect task1..task12 from any JSON shape. */
-function deepCollectTasks(obj, bag) {
-  if (obj == null) return bag;
-  const t = typeof obj;
-  if (t === "string") {
-    const s = obj.trim();
-    if (s.startsWith("{") || s.startsWith("[")) {
-      try {
-        deepCollectTasks(JSON.parse(s), bag);
-      } catch {
-        /* ignore */
-      }
-    }
-    return bag;
-  }
-  if (t !== "object") return bag;
-  if (Array.isArray(obj)) {
-    for (const x of obj) deepCollectTasks(x, bag);
-    return bag;
-  }
-  for (const [k, v] of Object.entries(obj)) {
-    const m = /^task(\d+)$/i.exec(k);
-    if (m && v != null && String(v).trim() !== "") {
-      bag[`task${m[1]}`] = String(v).trim();
-    } else {
-      deepCollectTasks(v, bag);
-    }
-  }
-  return bag;
-}
-
-function extractTasksFromHtmlString(html) {
-  const bag = {};
-  for (let i = 1; i <= 12; i++) {
-    const re = new RegExp(`["']task${i}["']\\s*:\\s*["']([^"']*)["']`, "i");
-    const m = re.exec(html);
-    if (m) bag[`task${i}`] = m[1];
-  }
-  return bag;
-}
-
-function parseHtmlEmbeddedJsonBlocks(html) {
-  const out = [];
-  const re = /<script[^>]*type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi;
-  let m;
-  while ((m = re.exec(html))) {
-    const chunk = m[1].trim();
-    if (chunk) {
-      try {
-        out.push(JSON.parse(chunk));
-      } catch {
-        /* skip */
-      }
-    }
-  }
-  return out;
-}
-
-function scrapeTasksFromDom(doc) {
-  const bag = {};
-  for (let i = 1; i <= 12; i++) {
-    const sel = [
-      `[data-task="${i}"]`,
-      `[data-task-id="${i}"]`,
-      `#task${i}`,
-      `[id="task${i}"]`,
-    ];
-    for (const s of sel) {
-      const el = doc.querySelector(s);
-      if (el) {
-        const ans =
-          el.getAttribute("data-answer") ||
-          el.getAttribute("data-value") ||
-          el.textContent;
-        if (ans && String(ans).trim()) {
-          bag[`task${i}`] = String(ans).trim();
-          break;
-        }
-      }
-    }
-  }
-  return bag;
-}
-
-/**
- * Merge strategies: nested JSON keys, regex on raw text, HTML DOM, embedded JSON scripts.
- */
-function computeOnionTasksFromRaw(raw) {
-  const merged = {};
-  const text = String(raw ?? "").trim();
-  if (!text) return merged;
-
-  let parsed = null;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    parsed = null;
-  }
-
-  if (parsed && typeof parsed === "object") {
-    deepCollectTasks(parsed, merged);
-    const html =
-      typeof parsed.html === "string"
-        ? parsed.html
-        : typeof parsed.body === "string"
-          ? parsed.body
-          : typeof parsed.content === "string"
-            ? parsed.content
-            : null;
-    if (html) {
-      Object.assign(merged, extractTasksFromHtmlString(html));
-      try {
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        Object.assign(merged, scrapeTasksFromDom(doc));
-      } catch {
-        /* ignore */
-      }
-      for (const block of parseHtmlEmbeddedJsonBlocks(html)) {
-        deepCollectTasks(block, merged);
-      }
-    }
-  }
-
-  Object.assign(merged, extractTasksFromHtmlString(text));
-  try {
-    const doc = new DOMParser().parseFromString(text, "text/html");
-    Object.assign(merged, scrapeTasksFromDom(doc));
-  } catch {
-    /* not HTML */
-  }
-  for (const block of parseHtmlEmbeddedJsonBlocks(text)) {
-    deepCollectTasks(block, merged);
-  }
-
-  return merged;
-}
-
-function buildOnionSubmissionJson(taskMap) {
-  const o = {};
-  for (let i = 1; i <= 12; i++) {
-    const k = `task${i}`;
-    o[k] = taskMap[k] != null && String(taskMap[k]).trim() !== "" ? String(taskMap[k]).trim() : "";
-  }
-  return o;
-}
-
 function pickFirst(obj, keys) {
   for (const k of keys) {
     if (obj && obj[k] != null && String(obj[k]).trim() !== "") return obj[k];
@@ -388,11 +245,8 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="flex-grow-1">
           <div class="q-title">How this works</div>
           <div class="q-filter mt-1">
-            The exam loads personalized data from
-            <code class="small">/questionData</code> (same origin as the exam). Embedded here, your browser usually
-            cannot call that API with your session cookie (cross-site). Copy the response from DevTools → Network while
-            on the exam page, then paste below. This tool extracts <code>task1</code>–<code>task12</code> from JSON or HTML
-            when the answers are embedded, and builds the submission JSON for you.
+            Use the embedded tools for Q1–Q4 above. For Solana Devnet, copy <code class="small">questionData</code> from
+            DevTools → Network on the exam page and paste below — your session cookie only works there, not in this embed.
           </div>
         </div>
       </div>
@@ -413,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
               src="${P2_SOLVER_WEB_URL}"
               title="Q1 — Web Scraping Solver (Project-2 HUB)"
               class="w-100 d-block"
-              style="min-height: 380px; height: 440px; border: 0"
+              style="min-height: 520px; height: min(62vh, 780px); border: 0"
               loading="lazy"
               referrerpolicy="no-referrer-when-downgrade"
               allow="clipboard-write; fullscreen"
@@ -446,7 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
               src="${P2_SOLVER_BLOCK_URL}"
               title="Q2 — Blockchain Vault Transfer (Project-2 HUB)"
               class="w-100 d-block"
-              style="min-height: 380px; height: 520px; border: 0"
+              style="min-height: 560px; height: min(68vh, 880px); border: 0"
               loading="lazy"
               referrerpolicy="no-referrer-when-downgrade"
               allow="clipboard-write; fullscreen"
@@ -471,7 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
               src="${P2_SOLVER_QR_TRACE_URL}"
               title="Q3 — QR-Trace Solana Solver (Project-2 HUB)"
               class="w-100 d-block"
-              style="min-height: 380px; height: 440px; border: 0"
+              style="min-height: 520px; height: min(62vh, 780px); border: 0"
               loading="lazy"
               referrerpolicy="no-referrer-when-downgrade"
               allow="clipboard-write; fullscreen"
@@ -491,50 +345,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     <div class="answer-card mb-3">
       <div class="d-flex align-items-start gap-3">
-        <div class="q-number">◎</div>
+        <div class="q-number">4</div>
         <div class="flex-grow-1">
-          <div class="q-title">Onion scraping challenge (<code>q-onion-scrape-server</code>)</div>
-          <div class="q-filter mt-1">Weighted 12 marks — JSON payload with <code>task1</code> … <code>task12</code>.</div>
-
-          <div class="mt-3">
-            <div class="answer-label">Exam email</div>
-            <input id="p2-email" class="form-control" placeholder="you@ds.study.iitm.ac.in" autocomplete="off" spellcheck="false" />
+          <div class="q-title">Q4 · IITM Discourse KB Solver</div>
+          <div class="q-filter mt-1">
+            Embedded Hugging Face Space — interactive solver with substantial UI. If the frame is blank or slow to load,
+            <a href="${P4_HF_SPACE_PAGE_URL}" target="_blank" rel="noopener" class="text-warning">open the Space in a new tab</a>
+            (<span class="font-monospace small">${escapeHtml(P4_HF_SPACE_PAGE_URL)}</span>).
           </div>
-          <div class="mt-2">
-            <div class="answer-label">quizSign (optional, from exam URL if present)</div>
-            <input id="p2-quiz-sign" class="form-control font-monospace" placeholder="" autocomplete="off" spellcheck="false" />
-          </div>
-          <div class="mt-2 small text-muted">
-            Direct API URL (open on the exam origin if needed):
-            <div class="answer-json mt-1" id="p2-onion-url">—</div>
-            <button type="button" class="copy-btn mt-1" id="p2-copy-onion-url">Copy URL</button>
-          </div>
-
-          <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
-            <button type="button" class="btn btn-sm btn-outline-warning" id="p2-fetch-onion" style="border-radius:999px;">
-              Try fetch questionData
-            </button>
-            <span class="small text-muted" id="p2-fetch-onion-status"></span>
-          </div>
-
-          <div class="mt-3">
-            <div class="answer-label">Paste raw response (JSON or HTML from Network → questionData)</div>
-            <textarea id="p2-onion-paste" class="form-control font-monospace" rows="8" spellcheck="false" placeholder='Paste the full response body here…'></textarea>
-          </div>
-          <div class="mt-2 d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-sm btn-accent-p2" id="p2-parse-onion">Parse &amp; fill tasks</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="p2-clear-onion-paste" style="border-radius:999px;">Clear paste</button>
-          </div>
-
-          <div class="mt-3">
-            <div class="answer-label">Tasks (edit if needed)</div>
-            <div class="row g-2" id="p2-task-inputs"></div>
-          </div>
-
-          <div class="mt-3">
-            <div class="answer-label">Submission JSON (onion question)</div>
-            <pre class="answer-json mb-1" id="p2-onion-json">{}</pre>
-            <button type="button" class="copy-btn" id="p2-copy-onion-json">Copy JSON</button>
+          <div class="mt-2 rounded overflow-hidden border border-secondary shadow-sm" style="background: rgba(15, 23, 42, 0.85)">
+            <iframe
+              id="p2-hf-q4-frame"
+              src="${P4_HF_SPACE_EMBED_URL}"
+              title="Q4 — IITM Discourse KB Solver (Hugging Face Space)"
+              class="w-100 d-block"
+              style="min-height: 800px; height: min(88vh, 1200px); border: 0"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; microphone; camera"
+            ></iframe>
           </div>
         </div>
       </div>
@@ -546,7 +375,16 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="flex-grow-1">
           <div class="q-title">Solana Devnet transfer (<code>q-crypto-transfers-server</code>)</div>
           <div class="q-filter mt-1">
-            3 marks — send the exact lamports/SOL and memo to the vault shown in your portal, then paste the transaction signature.
+            Send the exact lamports/SOL and memo to the vault shown in your portal, then paste the transaction signature.
+          </div>
+
+          <div class="mt-3">
+            <div class="answer-label">Exam email</div>
+            <input id="p2-email" class="form-control" placeholder="you@ds.study.iitm.ac.in" autocomplete="off" spellcheck="false" />
+          </div>
+          <div class="mt-2">
+            <div class="answer-label">quizSign (optional, from exam URL if present)</div>
+            <input id="p2-quiz-sign" class="form-control font-monospace" placeholder="" autocomplete="off" spellcheck="false" />
           </div>
 
           <div class="mt-2 small text-muted">
@@ -584,54 +422,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const emailEl = document.getElementById("p2-email");
   const quizEl = document.getElementById("p2-quiz-sign");
-  const onionUrlEl = document.getElementById("p2-onion-url");
   const cryptoUrlEl = document.getElementById("p2-crypto-url");
-  const taskRow = document.getElementById("p2-task-inputs");
-  const onionJsonEl = document.getElementById("p2-onion-json");
-  const onionPaste = document.getElementById("p2-onion-paste");
 
   function refreshUrls() {
+    if (!emailEl || !cryptoUrlEl) return;
     const em = normEmail(emailEl.value) || "you@example.com";
-    const qz = quizEl.value || "";
-    onionUrlEl.textContent = buildQuestionDataUrl(em, qz, Q_ONION);
+    const qz = quizEl ? quizEl.value || "" : "";
     cryptoUrlEl.textContent = buildQuestionDataUrl(em, qz, Q_CRYPTO);
   }
 
-  for (let i = 1; i <= 12; i++) {
-    const col = document.createElement("div");
-    col.className = "col-6 col-md-4 col-lg-3";
-    col.innerHTML = `
-      <label class="small text-muted mb-0" for="p2-task-${i}">task${i}</label>
-      <input class="form-control form-control-sm font-monospace" id="p2-task-${i}" spellcheck="false" autocomplete="off" />
-    `;
-    taskRow.appendChild(col);
-  }
-
-  function readTaskMapFromInputs() {
-    const m = {};
-    for (let i = 1; i <= 12; i++) {
-      const el = document.getElementById(`p2-task-${i}`);
-      if (el) m[`task${i}`] = el.value.trim();
-    }
-    return m;
-  }
-
-  function applyTaskMapToInputs(taskMap) {
-    for (let i = 1; i <= 12; i++) {
-      const el = document.getElementById(`p2-task-${i}`);
-      const v = taskMap[`task${i}`];
-      if (el && v != null && String(v).trim() !== "") el.value = String(v).trim();
-    }
-  }
-
-  function refreshOnionJson() {
-    const j = buildOnionSubmissionJson(readTaskMapFromInputs());
-    onionJsonEl.textContent = JSON.stringify(j, null, 2);
-  }
-
-  emailEl.addEventListener("input", refreshUrls);
-  quizEl.addEventListener("input", refreshUrls);
-  taskRow.addEventListener("input", refreshOnionJson);
+  if (emailEl) emailEl.addEventListener("input", refreshUrls);
+  if (quizEl) quizEl.addEventListener("input", refreshUrls);
 
   document.getElementById("p2-copy-console-q1")?.addEventListener("click", () => {
     const el = document.getElementById("p2-console-q1");
@@ -642,42 +443,11 @@ document.addEventListener("DOMContentLoaded", () => {
     copyText(document.getElementById("p2-copy-console-q3"), el ? el.value : P2_CONSOLE_SCRIPT_Q3);
   });
 
-  document.getElementById("p2-copy-onion-url").addEventListener("click", () => {
-    copyText(document.getElementById("p2-copy-onion-url"), onionUrlEl.textContent);
-  });
-  document.getElementById("p2-copy-crypto-url").addEventListener("click", () => {
+  document.getElementById("p2-copy-crypto-url")?.addEventListener("click", () => {
     copyText(document.getElementById("p2-copy-crypto-url"), cryptoUrlEl.textContent);
   });
 
-  document.getElementById("p2-parse-onion").addEventListener("click", () => {
-    const merged = computeOnionTasksFromRaw(onionPaste.value);
-    applyTaskMapToInputs(merged);
-    refreshOnionJson();
-  });
-
-  document.getElementById("p2-clear-onion-paste").addEventListener("click", () => {
-    onionPaste.value = "";
-  });
-
-  document.getElementById("p2-copy-onion-json").addEventListener("click", () => {
-    copyText(document.getElementById("p2-copy-onion-json"), onionJsonEl.textContent);
-  });
-
-  document.getElementById("p2-fetch-onion").addEventListener("click", async () => {
-    const st = document.getElementById("p2-fetch-onion-status");
-    st.textContent = "Fetching…";
-    const url = buildQuestionDataUrl(normEmail(emailEl.value) || "test@example.com", quizEl.value || "", Q_ONION);
-    try {
-      const r = await fetch(url, { method: "GET", mode: "cors", credentials: "omit" });
-      const txt = await r.text();
-      st.textContent = `HTTP ${r.status} (${txt.length} bytes)`;
-      if (r.ok || txt) onionPaste.value = txt;
-    } catch (e) {
-      st.textContent = `Failed: ${e?.message || e}. Paste from Network instead.`;
-    }
-  });
-
-  document.getElementById("p2-parse-crypto").addEventListener("click", () => {
+  document.getElementById("p2-parse-crypto")?.addEventListener("click", () => {
     const { display } = summarizeCryptoPayload(document.getElementById("p2-crypto-paste").value);
     const box = document.getElementById("p2-crypto-summary");
     if (!display || (!display.vault && !display.memo)) {
@@ -694,11 +464,10 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   });
 
-  document.getElementById("p2-copy-tx").addEventListener("click", () => {
+  document.getElementById("p2-copy-tx")?.addEventListener("click", () => {
     copyText(document.getElementById("p2-copy-tx"), document.getElementById("p2-tx-id").value.trim());
   });
 
   refreshUrls();
-  refreshOnionJson();
   results.style.display = "block";
 });
